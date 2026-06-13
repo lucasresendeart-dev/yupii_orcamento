@@ -2245,7 +2245,7 @@ h1 {
     width: 100%;
     max-width: 100%;
     margin-left: 0;
-    padding: 0 18px 28px;
+    padding: 18px 18px 28px;
     overflow-x: hidden;
   }
 
@@ -2271,6 +2271,14 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  .quote-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-summary {
+    order: -1;
+  }
+
   .street-field {
     grid-column: auto;
   }
@@ -2282,6 +2290,12 @@ h1 {
 
   .quote-items-head {
     display: none;
+  }
+
+  .package-picker {
+    left: auto;
+    right: 0;
+    width: min(260px, calc(100vw - 76px));
   }
 
   .quote-item-row {
