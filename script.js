@@ -1,3 +1,70 @@
+// ─── Camada de dados (API + Neon) ───────────────────────────────────────────
+const API_BASE = "/api";
+
+async function apiGet(resource) {
+  const response = await fetch(`${API_BASE}/${resource}`);
+  if (!response.ok) throw new Error(`Falha ao buscar ${resource}`);
+  return response.json();
+}
+
+async function apiSave(resource, item) {
+  const response = await fetch(`${API_BASE}/${resource}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error(`Falha ao salvar ${resource}`);
+  return response.json();
+}
+
+async function apiDelete(resource, id) {
+  const response = await fetch(`${API_BASE}/${resource}?id=${id}`, { method: "DELETE" });
+  if (!response.ok && response.status !== 204) throw new Error(`Falha ao excluir ${resource}`);
+}
+
+let clientsCache = [];
+let themesCache = [];
+let quotesCache = [];
+
+async function loadAllData() {
+  const [clients, themes, quotes] = await Promise.all([
+    apiGet("clients"),
+    apiGet("themes"),
+    apiGet("quotes"),
+  ]);
+  clientsCache = clients;
+  themesCache = themes;
+  quotesCache = quotes;
+}
+
+async function saveClient(client) {
+  const saved = await apiSave("clients", client);
+  const i = clientsCache.findIndex((c) => String(c.id) === String(saved.id));
+  if (i >= 0) clientsCache[i] = saved;
+  else clientsCache.push(saved);
+  return saved;
+}
+
+async function saveTheme(theme) {
+  const saved = await apiSave("themes", theme);
+  const i = themesCache.findIndex((t) => String(t.id) === String(saved.id));
+  if (i >= 0) themesCache[i] = saved;
+  else themesCache.push(saved);
+  return saved;
+}
+
+async function saveQuote(quote) {
+  const saved = await apiSave("quotes", quote);
+  const i = quotesCache.findIndex((q) => String(q.id) === String(saved.id));
+  if (i >= 0) quotesCache[i] = saved;
+  else quotesCache.push(saved);
+  return saved;
+}
+
+function getClients() {
+  return clientsCache;
+}
+
 const icons = {
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5M9 21v-6h6v6"/>',
   file: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/>',
@@ -155,73 +222,6 @@ let editingThemeId = null;
 let editingQuoteId = null;
 let visibleCalendarDate = new Date();
 let pendingSignalReversalId = null;
-
-// ─── Camada de dados (API + Neon) ───────────────────────────────────────────
-const API_BASE = "/api";
-
-async function apiGet(resource) {
-  const response = await fetch(`${API_BASE}/${resource}`);
-  if (!response.ok) throw new Error(`Falha ao buscar ${resource}`);
-  return response.json();
-}
-
-async function apiSave(resource, item) {
-  const response = await fetch(`${API_BASE}/${resource}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(item),
-  });
-  if (!response.ok) throw new Error(`Falha ao salvar ${resource}`);
-  return response.json();
-}
-
-async function apiDelete(resource, id) {
-  const response = await fetch(`${API_BASE}/${resource}?id=${id}`, { method: "DELETE" });
-  if (!response.ok && response.status !== 204) throw new Error(`Falha ao excluir ${resource}`);
-}
-
-let clientsCache = [];
-let themesCache = [];
-let quotesCache = [];
-
-async function loadAllData() {
-  const [clients, themes, quotes] = await Promise.all([
-    apiGet("clients"),
-    apiGet("themes"),
-    apiGet("quotes"),
-  ]);
-  clientsCache = clients;
-  themesCache = themes;
-  quotesCache = quotes;
-}
-
-async function saveClient(client) {
-  const saved = await apiSave("clients", client);
-  const i = clientsCache.findIndex((c) => String(c.id) === String(saved.id));
-  if (i >= 0) clientsCache[i] = saved;
-  else clientsCache.push(saved);
-  return saved;
-}
-
-async function saveTheme(theme) {
-  const saved = await apiSave("themes", theme);
-  const i = themesCache.findIndex((t) => String(t.id) === String(saved.id));
-  if (i >= 0) themesCache[i] = saved;
-  else themesCache.push(saved);
-  return saved;
-}
-
-async function saveQuote(quote) {
-  const saved = await apiSave("quotes", quote);
-  const i = quotesCache.findIndex((q) => String(q.id) === String(saved.id));
-  if (i >= 0) quotesCache[i] = saved;
-  else quotesCache.push(saved);
-  return saved;
-}
-
-function getClients() {
-  return clientsCache;
-}
 
 function clientInitials(name) {
   return (name || "?").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
