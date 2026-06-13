@@ -555,6 +555,12 @@ function showAgendaQuoteDetails(quoteId) {
       ${(quote.items || []).map((item) => `<div class="agenda-detail-item"><strong>${escapeHtml(item.description)}</strong><span>${item.quantity}x · ${currency(item.price)}</span></div>`).join("")}
       <div class="agenda-detail-item"><strong>Total do orçamento</strong><strong>${currency(quote.total)}</strong></div>
     </div>
+    ${quote.notes ? `
+    <div class="agenda-detail-items">
+      <span>Observações</span>
+      <div class="agenda-detail-note">${escapeHtml(quote.notes)}</div>
+    </div>
+    ` : ""}
   `;
   agendaDetailsModal.hidden = false;
 }

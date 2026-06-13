@@ -875,6 +875,7 @@ button {
 
 .quote-main-column {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -1915,6 +1916,14 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
+.agenda-detail-note {
+  padding: 8px 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .eyebrow {
   display: block;
   margin-bottom: 6px;
@@ -2208,7 +2217,7 @@ h1 {
   }
 
   .quote-editor {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .quote-summary {
@@ -2272,11 +2281,7 @@ h1 {
   }
 
   .quote-editor {
-    grid-template-columns: 1fr;
-  }
-
-  .quote-summary {
-    order: -1;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .street-field {
@@ -2286,6 +2291,20 @@ h1 {
   .quote-location,
   .quote-notes {
     grid-column: auto;
+  }
+
+  .quote-section-header {
+    flex-wrap: wrap;
+  }
+
+  .quote-section-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .compact-button {
+    flex: 1;
+    min-width: 0;
   }
 
   .quote-items-head {
