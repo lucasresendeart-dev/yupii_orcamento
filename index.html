@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Painel de orçamentos da Yupii Personalizados e Festas"
+    />
+    <title>Yupii | Orçamentos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Nunito:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="access-screen" id="accessScreen">
+      <form class="access-card" id="accessForm">
+        <img src="assets/yupii-wordmark.png" alt="Yupii" />
+        <div>
+          <span class="eyebrow">Área restrita</span>
+          <h1>Bem-vinda!</h1>
+          <p>Digite a senha para acessar os orçamentos da Yupii.</p>
+        </div>
+        <label class="access-field">
+          <span>Senha</span>
+          <input id="accessPassword" type="password" placeholder="Digite a senha" autocomplete="current-password" required />
+          <small id="accessMessage"></small>
+        </label>
+        <button class="primary-button" type="submit">Entrar</button>
+      </form>
+    </section>
+
+    <div class="app-shell" id="appShell" hidden>
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <img
+            src="assets/yupii-wordmark.png"
+            alt="Yupii"
+          />
+        </div>
+
+        <nav class="main-nav" aria-label="Navegação principal">
+          <a class="nav-item active" href="#inicio" data-page-link="home" aria-current="page">
+            <span class="nav-icon" data-icon="home"></span>
+            Visão geral
+          </a>
+          <a class="nav-item" href="#orcamentos" data-page-link="quotes">
+            <span class="nav-icon" data-icon="file"></span>
+            Orçamentos
+          </a>
+          <a class="nav-item" href="#clientes" data-page-link="clients">
+            <span class="nav-icon" data-icon="users"></span>
+            Clientes
+          </a>
+          <a class="nav-item" href="#catalogo" data-page-link="catalog">
+            <span class="nav-icon" data-icon="box"></span>
+            Catálogo
+          </a>
+          <a class="nav-item" href="#agenda" data-page-link="agenda">
+            <span class="nav-icon" data-icon="calendar"></span>
+            Agenda
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a class="nav-item" href="#">
+            <span class="nav-icon" data-icon="settings"></span>
+            Configurações
+          </a>
+          <div class="profile">
+            <div class="avatar">Y</div>
+            <div>
+              <strong>Yupii Festas</strong>
+              <span>Administração</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar" id="topbar">
+          <button class="icon-button menu-button" id="menuButton" aria-label="Abrir menu">
+            <span data-icon="menu"></span>
+          </button>
+          <div class="topbar-copy">
+            <span>Sábado, 13 de junho</span>
+          </div>
+        </header>
+
+        <div class="page-view active" id="homePage">
+        <section class="hero">
+          <div>
+            <span class="eyebrow">Seu espaço de trabalho</span>
+            <h1>Vamos tornar a próxima festa inesquecível?</h1>
+            <p>Crie orçamentos profissionais e acompanhe tudo em um só lugar.</p>
+          </div>
+          <button class="primary-button" id="newQuoteButton">
+            <span data-icon="plus"></span>
+            Novo orçamento
+          </button>
+        </section>
+
+        <div class="content-grid">
+          <section class="panel quotes-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Acompanhe de perto</span>
+                <h2>Orçamentos recentes</h2>
+              </div>
+              <button class="text-button" id="homeViewAllQuotes">Ver todos <span data-icon="arrow"></span></button>
+            </div>
+            <div class="quote-list" id="homeQuoteList">
+              <div class="empty-clients" id="homeEmptyQuotes" hidden>
+                <span class="empty-icon"><span data-icon="file"></span></span>
+                <strong>Nenhum orçamento ainda</strong>
+                <p>Crie o primeiro orçamento pelo botão acima.</p>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel events-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Na agenda</span>
+                <h2>Próximos eventos</h2>
+              </div>
+            </div>
+            <div class="event-list" id="homeEventList">
+              <div class="empty-clients" id="homeEmptyEvents" hidden>
+                <span class="empty-icon"><span data-icon="calendar"></span></span>
+                <strong>Nada na agenda</strong>
+                <p>Orçamentos aprovados com sinal pago aparecem aqui.</p>
+              </div>
+            </div>
+            <button class="secondary-button" id="homeViewAgenda"><span data-icon="calendar"></span> Ver agenda completa</button>
+          </aside>
+        </div>
+        </div>
+
+        <div class="page-view" id="clientsPage">
+          <div id="clientListView">
+            <section class="page-heading">
+              <div>
+                <span class="eyebrow">Seus contatos</span>
+                <h1>Clientes</h1>
+                <p>Encontre rapidamente quem já fez ou solicitou um orçamento.</p>
+              </div>
+              <button class="primary-button" id="newClientButton" type="button"><span data-icon="plus"></span> Novo cliente</button>
+            </section>
+
+            <section class="panel clients-panel">
+              <div class="clients-toolbar">
+                <label class="client-search">
+                  <span data-icon="search"></span>
+                  <input id="clientSearch" type="search" placeholder="Buscar por nome, CPF, CNPJ ou telefone" />
+                </label>
+                <span class="client-count" id="clientCount">0 clientes</span>
+              </div>
+              <div class="clients-list" id="clientsList"></div>
+              <div class="empty-clients" id="emptyClients">
+                <span class="empty-icon"><span data-icon="users"></span></span>
+                <strong>Nenhum cliente cadastrado</strong>
+                <p>Cadastre o primeiro cliente para começar a criar orçamentos.</p>
+                <button class="secondary-button" id="emptyNewClientButton" type="button"><span data-icon="plus"></span> Cadastrar cliente</button>
+              </div>
+            </section>
+          </div>
+
+          <div id="clientFormView" hidden>
+            <section class="page-heading">
+              <div>
+                <span class="eyebrow">Cadastro rápido</span>
+                <h1>Novo cliente</h1>
+                <p>Cadastre somente o necessário para criar orçamentos e manter contato.</p>
+              </div>
+              <button class="text-button back-clients" type="button"><span data-icon="arrow-left"></span> Voltar aos clientes</button>
+            </section>
+
+            <section class="client-layout">
+            <form class="panel client-form" id="clientForm">
+              <fieldset class="person-type">
+                <legend>Tipo de cliente</legend>
+                <label class="type-option active">
+                  <input type="radio" name="personType" value="cpf" checked />
+                  <span class="type-icon"><span data-icon="user"></span></span>
+                  <span><strong>Pessoa física</strong><small>Cadastro simples com CPF</small></span>
+                </label>
+                <label class="type-option">
+                  <input type="radio" name="personType" value="cnpj" />
+                  <span class="type-icon"><span data-icon="building"></span></span>
+                  <span><strong>Empresa</strong><small>Preenchimento pelo CNPJ</small></span>
+                </label>
+              </fieldset>
+
+              <div class="form-section">
+                <div class="section-title">
+                  <span class="step-number">1</span>
+                  <div><strong>Identificação</strong><small id="identificationHelp">Informe o CPF e o nome do cliente.</small></div>
+                </div>
+                <div class="form-grid">
+                  <label class="field document-field">
+                    <span id="documentLabel">CPF</span>
+                    <div class="input-with-action">
+                      <input id="document" name="document" inputmode="numeric" placeholder="000.000.000-00" required />
+                      <button type="button" id="searchCnpjButton" class="search-cnpj" hidden>
+                        <span data-icon="search"></span> Buscar
+                      </button>
+                    </div>
+                    <small id="documentMessage">Somente números ou CPF formatado.</small>
+                  </label>
+                  <label class="field name-field">
+                    <span id="nameLabel">Nome completo</span>
+                    <input id="clientName" name="clientName" placeholder="Ex.: Maria da Silva" required />
+                  </label>
+                  <label class="field company-only" hidden>
+                    <span>Nome fantasia</span>
+                    <input id="tradeName" name="tradeName" placeholder="Nome conhecido da empresa" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="section-title">
+                  <span class="step-number">2</span>
+                  <div><strong>Contato</strong><small>Para conversar sobre o orçamento e a festa.</small></div>
+                </div>
+                <div class="form-grid two-columns">
+                  <label class="field">
+                    <span>Telefone / WhatsApp</span>
+                    <input id="phone" name="phone" inputmode="tel" placeholder="(35) 99999-9999" required />
+                  </label>
+                  <label class="field">
+                    <span>E-mail <em>opcional</em></span>
+                    <input id="email" name="email" type="email" placeholder="cliente@email.com" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-section company-only" hidden>
+                <div class="section-title">
+                  <span class="step-number">3</span>
+                  <div><strong>Endereço da empresa</strong><small>Preenchido automaticamente na busca.</small></div>
+                </div>
+                <div class="form-grid address-grid">
+                  <label class="field"><span>CEP</span><input id="zipCode" name="zipCode" /></label>
+                  <label class="field street-field"><span>Logradouro</span><input id="street" name="street" /></label>
+                  <label class="field"><span>Número</span><input id="number" name="number" /></label>
+                  <label class="field"><span>Bairro</span><input id="district" name="district" /></label>
+                  <label class="field"><span>Cidade</span><input id="city" name="city" /></label>
+                  <label class="field"><span>UF</span><input id="state" name="state" maxlength="2" /></label>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button class="secondary-button back-clients" type="button">Cancelar</button>
+                <button class="primary-button" type="submit"><span data-icon="check"></span> Salvar cliente</button>
+              </div>
+            </form>
+
+            <aside class="client-tip">
+              <span class="tip-icon"><span data-icon="sparkle"></span></span>
+              <strong>Cadastro sem complicação</strong>
+              <p>Para pessoa física, nome, CPF e telefone já são suficientes. Você poderá completar os dados depois, se precisar.</p>
+            </aside>
+          </section>
+          </div>
+        </div>
+
+        <div class="page-view" id="quotesPage">
+          <div id="quoteListView">
+            <section class="page-heading">
+              <div>
+                <span class="eyebrow">Propostas e reservas</span>
+                <h1>Orçamentos</h1>
+                <p>Acompanhe os orçamentos criados e encontre rapidamente cada festa.</p>
+              </div>
+              <button class="primary-button new-quote-action" type="button"><span data-icon="plus"></span> Novo orçamento</button>
+            </section>
+
+            <section class="panel clients-panel">
+              <div class="clients-toolbar">
+                <label class="client-search">
+                  <span data-icon="search"></span>
+                  <input id="quoteSearch" type="search" placeholder="Buscar por cliente, festa ou número" />
+                </label>
+                <span class="client-count" id="quoteCount">0 orçamentos</span>
+              </div>
+              <div class="quotes-management-list" id="quotesList"></div>
+              <div class="empty-clients" id="emptyQuotes">
+                <span class="empty-icon"><span data-icon="file"></span></span>
+                <strong>Nenhum orçamento criado</strong>
+                <p>Crie o primeiro orçamento para começar a acompanhar suas festas.</p>
+                <button class="secondary-button new-quote-action" type="button"><span data-icon="plus"></span> Criar orçamento</button>
+              </div>
+            </section>
+          </div>
+
+          <div id="quoteFormView" hidden>
+          <section class="page-heading quote-heading">
+            <div>
+              <span class="eyebrow">Novo orçamento</span>
+              <h1>Detalhes da festa</h1>
+              <p>Organize o evento, as peças e os serviços em um só lugar.</p>
+            </div>
+            <span class="status draft">Rascunho</span>
+          </section>
+
+          <form id="quoteForm" class="quote-editor">
+            <div class="quote-main-column">
+              <section class="panel quote-section">
+                <div class="section-title">
+                  <span class="step-number">1</span>
+                  <div><strong>Cliente e evento</strong><small>Para quem é o orçamento e quando será a festa.</small></div>
+                </div>
+                <div class="quote-form-grid">
+                  <label class="field">
+                    <span>Cliente</span>
+                    <select id="quoteClient" name="quoteClient" required>
+                      <option value="">Selecione um cliente</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Nome da festa</span>
+                    <input name="eventName" placeholder="Ex.: Aniversário da Laura" required />
+                  </label>
+                  <label class="field">
+                    <span>Data do evento</span>
+                    <input name="eventDate" type="date" required />
+                  </label>
+                  <label class="field">
+                    <span>Horário</span>
+                    <input name="eventTime" type="time" />
+                  </label>
+                  <label class="field quote-location">
+                    <span>Local da festa</span>
+                    <input name="eventLocation" placeholder="Salão, rua ou ponto de referência" />
+                  </label>
+                  <label class="field">
+                    <span>Tema <em>opcional</em></span>
+                    <input name="eventTheme" placeholder="Ex.: Jardim encantado" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="panel quote-section">
+                <div class="quote-section-header">
+                  <div class="section-title">
+                    <span class="step-number">2</span>
+                    <div><strong>Peças e serviços</strong><small>Detalhe tudo que será entregue ou realizado.</small></div>
+                  </div>
+                  <div class="quote-section-actions">
+                    <button class="secondary-button compact-button" id="addQuotePackageButton" type="button"><span data-icon="box"></span> Adicionar pacote</button>
+                    <button class="secondary-button compact-button" id="addQuoteItem" type="button"><span data-icon="plus"></span> Adicionar item</button>
+                  </div>
+                </div>
+                <div class="quote-items-head">
+                  <span>Descrição</span><span>Tipo</span><span>Qtd.</span><span>Valor unitário</span><span>Total</span><span></span>
+                </div>
+                <div class="quote-items" id="quoteItems"></div>
+              </section>
+
+              <section class="panel quote-section">
+                <div class="section-title">
+                  <span class="step-number">3</span>
+                  <div><strong>Condições e observações</strong><small>O que o cliente precisa saber antes de aprovar.</small></div>
+                </div>
+                <div class="quote-form-grid">
+                  <label class="field">
+                    <span>Validade do orçamento</span>
+                    <select name="validity">
+                      <option value="7">7 dias</option>
+                      <option value="15" selected>15 dias</option>
+                      <option value="30">30 dias</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Forma de pagamento</span>
+                    <select name="paymentMethod">
+                      <option>Pix</option>
+                      <option>Dinheiro</option>
+                      <option>Cartão</option>
+                      <option>Pix ou dinheiro</option>
+                    </select>
+                  </label>
+                  <label class="field quote-notes">
+                    <span>Observações</span>
+                    <textarea name="notes" rows="3" placeholder="Ex.: montagem no período da manhã; desmontagem após o evento."></textarea>
+                  </label>
+                </div>
+              </section>
+            </div>
+
+            <aside class="panel quote-summary">
+              <span class="eyebrow">Resumo</span>
+              <h2>Valores do orçamento</h2>
+              <div class="issuer-summary">
+                <img src="assets/yupii-wordmark.png" alt="Yupii" />
+                <div>
+                  <strong>Yupii Personalizados e Festas</strong>
+                  <span>CNPJ 54.674.665/0001-00</span>
+                  <span>Priscila Carvalho Ribeiro</span>
+                </div>
+              </div>
+              <div class="summary-lines">
+                <div><span>Itens e serviços</span><strong id="quoteSubtotal">R$ 0,00</strong></div>
+                <label><span>Desconto</span><div class="money-input"><span>R$</span><input id="quoteDiscount" inputmode="decimal" value="0,00" /></div></label>
+                <label><span>Frete / entrega</span><div class="money-input"><span>R$</span><input id="quoteDelivery" inputmode="decimal" value="0,00" /></div></label>
+              </div>
+              <div class="summary-total">
+                <span>Total</span>
+                <strong id="quoteTotal">R$ 0,00</strong>
+              </div>
+              <label class="deposit-control">
+                <span>Sinal para reservar a data</span>
+                <div><input id="quoteDepositPercent" type="number" min="0" max="100" value="50" /><span>%</span><strong id="quoteDeposit">R$ 0,00</strong></div>
+              </label>
+              <p class="summary-note">A reserva da data será confirmada após o pagamento do sinal.</p>
+              <button class="primary-button quote-save" type="submit"><span data-icon="check"></span> Salvar orçamento</button>
+              <button class="secondary-button" id="cancelQuote" type="button">Cancelar</button>
+            </aside>
+          </form>
+          </div>
+
+          <div id="quotePdfView" hidden>
+            <div class="pdf-toolbar">
+              <button class="text-button" id="backFromPdf" type="button"><span data-icon="arrow-left"></span> Voltar aos orçamentos</button>
+              <button class="primary-button" id="shareQuotePdf" type="button"><span data-icon="share"></span> Compartilhar / Salvar PDF</button>
+            </div>
+            <article class="pdf-document" id="pdfDocument"></article>
+          </div>
+        </div>
+
+        <div class="page-view" id="catalogPage">
+          <div id="catalogListView">
+            <section class="page-heading">
+              <div><span class="eyebrow">Pacotes de festa</span><h1>Catálogo</h1><p>Organize temas, versões e tudo que está incluso em cada pacote.</p></div>
+              <button class="primary-button" id="newThemeButton" type="button"><span data-icon="plus"></span> Novo tema</button>
+            </section>
+            <section class="panel clients-panel">
+              <div class="clients-toolbar">
+                <label class="client-search"><span data-icon="search"></span><input id="themeSearch" type="search" placeholder="Buscar por tema, categoria ou pacote" /></label>
+                <span class="client-count" id="themeCount">0 pacotes</span>
+              </div>
+              <div id="themesList" class="themes-list"></div>
+              <div class="empty-clients" id="emptyThemes">
+                <span class="empty-icon"><span data-icon="box"></span></span>
+                <strong>Nenhum tema cadastrado</strong>
+                <p>Cadastre os pacotes oferecidos pela Yupii.</p>
+                <button class="secondary-button" id="emptyNewThemeButton" type="button"><span data-icon="plus"></span> Cadastrar tema</button>
+              </div>
+            </section>
+          </div>
+
+          <div id="catalogFormView" hidden>
+            <section class="page-heading">
+              <div><span class="eyebrow">Pacote de festa</span><h1 id="themeFormTitle">Novo tema</h1><p>Defina o pacote e os itens que poderão entrar no orçamento.</p></div>
+              <button class="text-button back-catalog" type="button"><span data-icon="arrow-left"></span> Voltar ao catálogo</button>
+            </section>
+            <form class="catalog-form" id="themeForm">
+              <section class="panel quote-section">
+                <div class="section-title"><span class="step-number">1</span><div><strong>Identificação do pacote</strong><small>Ex.: Batismo · Completo ou Fazendinha · Simples.</small></div></div>
+                <div class="quote-form-grid">
+                  <label class="field"><span>Tema da festa</span><input id="themeName" name="themeName" placeholder="Ex.: Batismo" required /></label>
+                  <label class="field"><span>Versão do pacote</span><input id="packageName" name="packageName" placeholder="Ex.: Simples ou Completo" required /></label>
+                  <label class="field"><span>Categoria</span><input id="themeCategory" name="themeCategory" placeholder="Ex.: Religiosa ou Infantil" /></label>
+                  <label class="field"><span>Valor do pacote</span><input id="packagePrice" name="packagePrice" inputmode="decimal" placeholder="0,00" required /></label>
+                  <label class="field quote-notes"><span>Descrição <em>opcional</em></span><textarea id="themeDescription" name="themeDescription" rows="3" placeholder="Uma breve apresentação do pacote."></textarea></label>
+                </div>
+              </section>
+              <section class="panel quote-section">
+                <div class="quote-section-header">
+                  <div class="section-title"><span class="step-number">2</span><div><strong>Itens e serviços inclusos</strong><small>Os valores individuais poderão ser ajustados no orçamento.</small></div></div>
+                  <button class="secondary-button compact-button" id="addThemeItem" type="button"><span data-icon="plus"></span> Adicionar item</button>
+                </div>
+                <div class="theme-items" id="themeItems"></div>
+              </section>
+              <div class="form-actions catalog-actions">
+                <button class="secondary-button back-catalog" type="button">Cancelar</button>
+                <button class="primary-button" type="submit"><span data-icon="check"></span> Salvar tema</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="page-view" id="agendaPage">
+          <section class="page-heading">
+            <div><span class="eyebrow">Festas confirmadas</span><h1>Agenda</h1><p>Eventos com orçamento aprovado e sinal recebido.</p></div>
+            <div class="calendar-navigation"><button id="previousMonth" type="button" aria-label="Mês anterior"><span data-icon="arrow-left"></span></button><strong id="calendarMonth"></strong><button id="nextMonth" type="button" aria-label="Próximo mês"><span data-icon="arrow"></span></button></div>
+          </section>
+          <section class="panel calendar-panel">
+            <div class="calendar-weekdays"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="confirmModal" hidden>
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <span class="modal-icon"><span data-icon="calendar"></span></span>
+        <h2 id="confirmTitle">Reverter confirmação do sinal?</h2>
+        <p>O evento deixará de aparecer na agenda de festas confirmadas.</p>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelConfirm" type="button">Manter confirmação</button>
+          <button class="danger-button" id="approveConfirm" type="button">Sim, reverter</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="agendaDetailsModal" hidden>
+      <section class="agenda-details-modal" role="dialog" aria-modal="true" aria-labelledby="agendaDetailsTitle">
+        <button class="modal-close" id="closeAgendaDetails" type="button" aria-label="Fechar">×</button>
+        <div id="agendaDetailsContent"></div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="packagePickerModal" hidden>
+      <section class="package-picker-modal" role="dialog" aria-modal="true" aria-labelledby="packagePickerTitle">
+        <button class="modal-close" id="closePackagePicker" type="button" aria-label="Fechar">×</button>
+        <div class="package-picker-header">
+          <span class="eyebrow">Catálogo</span>
+          <h2 id="packagePickerTitle">Escolha um pacote</h2>
+          <p>Clique em um pacote para ver os itens inclusos e adicioná-lo ao orçamento.</p>
+        </div>
+        <div class="package-picker-list" id="packagePickerList"></div>
+        <div class="empty-clients" id="emptyPackagePicker" hidden>
+          <span class="empty-icon"><span data-icon="box"></span></span>
+          <strong>Nenhum pacote cadastrado</strong>
+          <p>Cadastre pacotes no Catálogo para adicioná-los aqui.</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status">Em breve: criação de um novo orçamento.</div>
+    <script src="assets/vendor/html2pdf.bundle.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

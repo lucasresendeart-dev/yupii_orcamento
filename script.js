@@ -1,0 +1,1294 @@
+const icons = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5M9 21v-6h6v6"/>',
+  file: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  box: '<path d="m21 8-9 5-9-5 9-5z"/><path d="m3 8 9 5v10l-9-5zM21 8l-9 5v10l9-5z"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-2.83 2.83-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21h-4v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06-2.83-2.83.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3v-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06 2.83-2.83.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3h4v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06 2.83 2.83-.06.06A1.65 1.65 0 0 0 19.4 9c.12.6.6 1.05 1.2 1.15H21v4h-.4A1.65 1.65 0 0 0 19.4 15z"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  building: '<path d="M4 21V5l8-3 8 3v16M8 9h2M14 9h2M8 13h2M14 13h2M9 21v-4h6v4"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  sparkle: '<path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  "arrow-left": '<path d="M19 12H5M11 18l-6-6 6-6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  check: '<path d="m20 6-11 11-5-5"/>',
+  wallet: '<path d="M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h16v11H5a3 3 0 0 1-3-3V6"/><path d="M16 13h2"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  down: '<path d="m6 9 6 6 6-6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+};
+
+const companyInfo = {
+  name: "Yupii Personalizados e Festas",
+  cnpj: "54.674.665/0001-00",
+  owner: "Priscila Carvalho Ribeiro",
+  address: "Rua Vinícius Vespúcio, 435, Alvorada - Formiga-MG",
+  phone: "(37) 99198-9691",
+};
+
+const ACCESS_PASSWORD = "123";
+const accessScreen = document.querySelector("#accessScreen");
+const accessForm = document.querySelector("#accessForm");
+const accessPassword = document.querySelector("#accessPassword");
+const accessMessage = document.querySelector("#accessMessage");
+const appShell = document.querySelector("#appShell");
+
+async function unlockApp() {
+  sessionStorage.setItem("yupiiAccess", "granted");
+  accessScreen.hidden = true;
+  appShell.hidden = false;
+  try {
+    await loadAllData();
+  } catch (error) {
+    console.error(error);
+    toast.textContent = "Não foi possível carregar os dados do servidor.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  }
+  renderHome();
+}
+
+if (sessionStorage.getItem("yupiiAccess") === "granted") {
+  unlockApp();
+}
+
+accessForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (accessPassword.value === ACCESS_PASSWORD) {
+    accessMessage.textContent = "";
+    await unlockApp();
+    return;
+  }
+  accessMessage.textContent = "Senha incorreta. Tente novamente.";
+  accessPassword.select();
+});
+
+document.querySelectorAll("[data-icon]").forEach((element) => {
+  const icon = icons[element.dataset.icon];
+  if (!icon) return;
+  element.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
+});
+
+const sidebar = document.querySelector("#sidebar");
+const menuButton = document.querySelector("#menuButton");
+const newQuoteButton = document.querySelector("#newQuoteButton");
+const toast = document.querySelector("#toast");
+const homePage = document.querySelector("#homePage");
+const clientsPage = document.querySelector("#clientsPage");
+const quotesPage = document.querySelector("#quotesPage");
+const catalogPage = document.querySelector("#catalogPage");
+const agendaPage = document.querySelector("#agendaPage");
+const pageLinks = document.querySelectorAll("[data-page-link]");
+const backHomeButtons = document.querySelectorAll(".back-home");
+const personTypeInputs = document.querySelectorAll('input[name="personType"]');
+const companyOnlyFields = document.querySelectorAll(".company-only");
+const documentInput = document.querySelector("#document");
+const documentLabel = document.querySelector("#documentLabel");
+const documentMessage = document.querySelector("#documentMessage");
+const nameLabel = document.querySelector("#nameLabel");
+const identificationHelp = document.querySelector("#identificationHelp");
+const searchCnpjButton = document.querySelector("#searchCnpjButton");
+const clientForm = document.querySelector("#clientForm");
+const clientListView = document.querySelector("#clientListView");
+const clientFormView = document.querySelector("#clientFormView");
+const newClientButtons = document.querySelectorAll("#newClientButton, #emptyNewClientButton");
+const backClientsButtons = document.querySelectorAll(".back-clients");
+const clientSearch = document.querySelector("#clientSearch");
+const clientsList = document.querySelector("#clientsList");
+const emptyClients = document.querySelector("#emptyClients");
+const clientCount = document.querySelector("#clientCount");
+const quoteForm = document.querySelector("#quoteForm");
+const quoteClient = document.querySelector("#quoteClient");
+const quoteItems = document.querySelector("#quoteItems");
+const addQuoteItemButton = document.querySelector("#addQuoteItem");
+const addQuotePackageButton = document.querySelector("#addQuotePackageButton");
+const packagePickerModal = document.querySelector("#packagePickerModal");
+const packagePickerList = document.querySelector("#packagePickerList");
+const emptyPackagePicker = document.querySelector("#emptyPackagePicker");
+const closePackagePickerButton = document.querySelector("#closePackagePicker");
+const quoteDiscount = document.querySelector("#quoteDiscount");
+const quoteDelivery = document.querySelector("#quoteDelivery");
+const quoteDepositPercent = document.querySelector("#quoteDepositPercent");
+const quoteSubtotal = document.querySelector("#quoteSubtotal");
+const quoteTotal = document.querySelector("#quoteTotal");
+const quoteDeposit = document.querySelector("#quoteDeposit");
+const cancelQuote = document.querySelector("#cancelQuote");
+const quoteListView = document.querySelector("#quoteListView");
+const quoteFormView = document.querySelector("#quoteFormView");
+const newQuoteActions = document.querySelectorAll(".new-quote-action");
+const quoteSearch = document.querySelector("#quoteSearch");
+const quotesList = document.querySelector("#quotesList");
+const emptyQuotes = document.querySelector("#emptyQuotes");
+const quoteCount = document.querySelector("#quoteCount");
+const quotePdfView = document.querySelector("#quotePdfView");
+const pdfDocument = document.querySelector("#pdfDocument");
+const backFromPdf = document.querySelector("#backFromPdf");
+const shareQuotePdf = document.querySelector("#shareQuotePdf");
+let activePdfQuote = null;
+const catalogListView = document.querySelector("#catalogListView");
+const catalogFormView = document.querySelector("#catalogFormView");
+const newThemeButtons = document.querySelectorAll("#newThemeButton, #emptyNewThemeButton");
+const backCatalogButtons = document.querySelectorAll(".back-catalog");
+const themeSearch = document.querySelector("#themeSearch");
+const themeCount = document.querySelector("#themeCount");
+const themesList = document.querySelector("#themesList");
+const emptyThemes = document.querySelector("#emptyThemes");
+const themeForm = document.querySelector("#themeForm");
+const themeFormTitle = document.querySelector("#themeFormTitle");
+const themeItems = document.querySelector("#themeItems");
+const addThemeItemButton = document.querySelector("#addThemeItem");
+const calendarGrid = document.querySelector("#calendarGrid");
+const calendarMonth = document.querySelector("#calendarMonth");
+const previousMonth = document.querySelector("#previousMonth");
+const nextMonth = document.querySelector("#nextMonth");
+const confirmModal = document.querySelector("#confirmModal");
+const cancelConfirm = document.querySelector("#cancelConfirm");
+const approveConfirm = document.querySelector("#approveConfirm");
+const agendaDetailsModal = document.querySelector("#agendaDetailsModal");
+const agendaDetailsContent = document.querySelector("#agendaDetailsContent");
+const closeAgendaDetails = document.querySelector("#closeAgendaDetails");
+let editingThemeId = null;
+let editingQuoteId = null;
+let visibleCalendarDate = new Date();
+let pendingSignalReversalId = null;
+
+// ─── Camada de dados (API + Neon) ───────────────────────────────────────────
+const API_BASE = "/api";
+
+async function apiGet(resource) {
+  const response = await fetch(`${API_BASE}/${resource}`);
+  if (!response.ok) throw new Error(`Falha ao buscar ${resource}`);
+  return response.json();
+}
+
+async function apiSave(resource, item) {
+  const response = await fetch(`${API_BASE}/${resource}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error(`Falha ao salvar ${resource}`);
+  return response.json();
+}
+
+async function apiDelete(resource, id) {
+  const response = await fetch(`${API_BASE}/${resource}?id=${id}`, { method: "DELETE" });
+  if (!response.ok && response.status !== 204) throw new Error(`Falha ao excluir ${resource}`);
+}
+
+let clientsCache = [];
+let themesCache = [];
+let quotesCache = [];
+
+async function loadAllData() {
+  const [clients, themes, quotes] = await Promise.all([
+    apiGet("clients"),
+    apiGet("themes"),
+    apiGet("quotes"),
+  ]);
+  clientsCache = clients;
+  themesCache = themes;
+  quotesCache = quotes;
+}
+
+async function saveClient(client) {
+  const saved = await apiSave("clients", client);
+  const i = clientsCache.findIndex((c) => String(c.id) === String(saved.id));
+  if (i >= 0) clientsCache[i] = saved;
+  else clientsCache.push(saved);
+  return saved;
+}
+
+async function saveTheme(theme) {
+  const saved = await apiSave("themes", theme);
+  const i = themesCache.findIndex((t) => String(t.id) === String(saved.id));
+  if (i >= 0) themesCache[i] = saved;
+  else themesCache.push(saved);
+  return saved;
+}
+
+async function saveQuote(quote) {
+  const saved = await apiSave("quotes", quote);
+  const i = quotesCache.findIndex((q) => String(q.id) === String(saved.id));
+  if (i >= 0) quotesCache[i] = saved;
+  else quotesCache.push(saved);
+  return saved;
+}
+
+function getClients() {
+  return clientsCache;
+}
+
+function clientInitials(name) {
+  return (name || "?").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character]);
+}
+
+function renderClients(query = "") {
+  const normalizedQuery = digits(query).length >= 3 ? digits(query) : query.toLocaleLowerCase("pt-BR").trim();
+  const clients = getClients().filter((client) => {
+    const searchable = [client.clientName, client.tradeName, client.document, client.phone, client.email].join(" ").toLocaleLowerCase("pt-BR");
+    return !normalizedQuery || searchable.includes(normalizedQuery) || digits(searchable).includes(normalizedQuery);
+  });
+
+  clientCount.textContent = `${clients.length} ${clients.length === 1 ? "cliente" : "clientes"}`;
+  emptyClients.hidden = clients.length > 0 || Boolean(query.trim());
+  clientsList.innerHTML = clients.map((client) => {
+    const isCompany = client.personType === "cnpj";
+    const displayName = client.tradeName || client.clientName || "Cliente sem nome";
+    const address = [
+      [client.street, client.number].filter(Boolean).join(", "),
+      client.district,
+      [client.city, client.state].filter(Boolean).join(" - "),
+      client.zipCode ? `CEP ${client.zipCode}` : "",
+    ].filter(Boolean).join(" · ");
+    return `
+      <article class="client-list-row" data-client-id="${client.id}" tabindex="0" role="button" aria-expanded="false">
+        <div class="client-main">
+          <div class="client-avatar${isCompany ? " mint" : ""}">${escapeHtml(clientInitials(displayName))}</div>
+          <div>
+            <strong>${escapeHtml(displayName)}</strong>
+            <span>${escapeHtml(client.clientName !== displayName ? client.clientName : client.document)}</span>
+          </div>
+        </div>
+        <div class="client-list-detail">
+          <span>${isCompany ? "CNPJ" : "CPF"}</span>
+          <strong>${escapeHtml(client.document || "Não informado")}</strong>
+        </div>
+        <div class="client-list-detail">
+          <span>Telefone / WhatsApp</span>
+          <strong>${escapeHtml(client.phone || "Não informado")}</strong>
+        </div>
+        <span class="client-type-badge${isCompany ? " company" : ""}">${isCompany ? "Empresa" : "Pessoa física"}</span>
+        <span class="client-expand-icon" data-icon="down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.down}</svg></span>
+      </article>
+      <div class="client-details-panel" data-client-details="${client.id}" hidden>
+        <div class="client-detail-item">
+          <span>${isCompany ? "Razão social" : "Nome completo"}</span>
+          <strong>${escapeHtml(client.clientName || "Não informado")}</strong>
+        </div>
+        <div class="client-detail-item">
+          <span>E-mail</span>
+          <strong>${escapeHtml(client.email || "Não informado")}</strong>
+        </div>
+        ${isCompany ? `
+          <div class="client-detail-item address">
+            <span>Endereço</span>
+            <strong>${escapeHtml(address || "Não informado")}</strong>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
+
+  if (!clients.length && query.trim()) {
+    clientsList.innerHTML = `
+      <div class="empty-clients">
+        <span class="empty-icon"><span data-icon="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.search}</svg></span></span>
+        <strong>Nenhum cliente encontrado</strong>
+        <p>Tente buscar por outro nome, documento ou telefone.</p>
+      </div>
+    `;
+  }
+}
+
+function toggleClientDetails(row) {
+  const details = clientsList.querySelector(`[data-client-details="${row.dataset.clientId}"]`);
+  const shouldOpen = row.getAttribute("aria-expanded") !== "true";
+  clientsList.querySelectorAll(".client-list-row.expanded").forEach((openRow) => {
+    openRow.classList.remove("expanded");
+    openRow.setAttribute("aria-expanded", "false");
+    const openDetails = clientsList.querySelector(`[data-client-details="${openRow.dataset.clientId}"]`);
+    if (openDetails) openDetails.hidden = true;
+  });
+  if (shouldOpen && details) {
+    row.classList.add("expanded");
+    row.setAttribute("aria-expanded", "true");
+    details.hidden = false;
+  }
+}
+
+function showClientList() {
+  clientFormView.hidden = true;
+  clientListView.hidden = false;
+  renderClients(clientSearch.value);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showClientForm() {
+  clientListView.hidden = true;
+  clientFormView.hidden = false;
+  clientForm.reset();
+  updatePersonType();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showPage(page) {
+  homePage.classList.toggle("active", page === "home");
+  clientsPage.classList.toggle("active", page === "clients");
+  quotesPage.classList.toggle("active", page === "quotes");
+  catalogPage.classList.toggle("active", page === "catalog");
+  agendaPage.classList.toggle("active", page === "agenda");
+  pageLinks.forEach((link) => {
+    const isActive = link.dataset.pageLink === page;
+    link.classList.toggle("active", isActive);
+    if (isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+  sidebar.classList.remove("open");
+  if (page === "clients") showClientList();
+  if (page === "quotes") showQuoteList();
+  if (page === "catalog") showCatalogList();
+  if (page === "agenda") renderCalendar();
+  if (page === "home") renderHome();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+pageLinks.forEach((link) => link.addEventListener("click", (event) => {
+  event.preventDefault();
+  showPage(link.dataset.pageLink);
+}));
+
+backHomeButtons.forEach((button) => button.addEventListener("click", () => showPage("home")));
+newClientButtons.forEach((button) => button.addEventListener("click", showClientForm));
+backClientsButtons.forEach((button) => button.addEventListener("click", showClientList));
+newThemeButtons.forEach((button) => button.addEventListener("click", () => showThemeForm()));
+backCatalogButtons.forEach((button) => button.addEventListener("click", showCatalogList));
+themeSearch.addEventListener("input", () => renderThemes(themeSearch.value));
+themesList.addEventListener("click", (event) => {
+  const editButton = event.target.closest("[data-edit-theme]");
+  if (editButton) {
+    showThemeForm(editButton.dataset.editTheme);
+    return;
+  }
+  const row = event.target.closest(".theme-row");
+  if (!row) return;
+  const details = themesList.querySelector(`[data-theme-details="${row.dataset.themeId}"]`);
+  const open = details.hidden;
+  themesList.querySelectorAll(".theme-details-panel").forEach((panel) => panel.hidden = true);
+  themesList.querySelectorAll(".theme-row").forEach((item) => item.classList.remove("expanded"));
+  if (open) {
+    details.hidden = false;
+    row.classList.add("expanded");
+  }
+});
+addThemeItemButton.addEventListener("click", () => addThemeItem());
+themeItems.addEventListener("click", (event) => {
+  const button = event.target.closest(".remove-theme-item");
+  if (button) button.closest(".theme-item-row").remove();
+});
+themeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const themes = getThemes();
+  const theme = {
+    id: editingThemeId || Date.now(),
+    themeName: document.querySelector("#themeName").value,
+    packageName: document.querySelector("#packageName").value,
+    themeCategory: document.querySelector("#themeCategory").value,
+    packagePrice: parseMoney(document.querySelector("#packagePrice").value),
+    themeDescription: document.querySelector("#themeDescription").value,
+    items: [...themeItems.querySelectorAll(".theme-item-row")].map((row) => ({
+      name: row.querySelector(".theme-item-name").value,
+      type: row.querySelector(".theme-item-type").value,
+      quantity: Number(row.querySelector(".theme-item-quantity").value) || 1,
+      price: parseMoney(row.querySelector(".theme-item-price").value),
+    })),
+  };
+  await saveTheme(theme);
+  toast.textContent = "Tema salvo com sucesso.";
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  showCatalogList();
+});
+previousMonth.addEventListener("click", () => {
+  visibleCalendarDate = new Date(visibleCalendarDate.getFullYear(), visibleCalendarDate.getMonth() - 1, 1);
+  renderCalendar();
+});
+nextMonth.addEventListener("click", () => {
+  visibleCalendarDate = new Date(visibleCalendarDate.getFullYear(), visibleCalendarDate.getMonth() + 1, 1);
+  renderCalendar();
+});
+clientSearch.addEventListener("input", () => renderClients(clientSearch.value));
+clientsList.addEventListener("click", (event) => {
+  const row = event.target.closest(".client-list-row");
+  if (row) toggleClientDetails(row);
+});
+clientsList.addEventListener("keydown", (event) => {
+  const row = event.target.closest(".client-list-row");
+  if (row && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    toggleClientDetails(row);
+  }
+});
+
+function digits(value) {
+  return value.replace(/\D/g, "");
+}
+
+function getThemes() {
+  return themesCache;
+}
+
+function renderThemes(query = "") {
+  const normalized = query.toLocaleLowerCase("pt-BR").trim();
+  const themes = getThemes().filter((theme) => !normalized || [theme.themeName, theme.packageName, theme.themeCategory].join(" ").toLocaleLowerCase("pt-BR").includes(normalized));
+  themeCount.textContent = `${themes.length} ${themes.length === 1 ? "pacote" : "pacotes"}`;
+  emptyThemes.hidden = themes.length > 0 || Boolean(query.trim());
+  themesList.innerHTML = themes.map((theme) => `
+    <article class="theme-row" data-theme-id="${theme.id}" tabindex="0">
+      <div class="theme-main"><strong>${escapeHtml(theme.themeName)}</strong><span>${escapeHtml(theme.packageName)}</span></div>
+      <div class="theme-detail"><span>Categoria</span><strong>${escapeHtml(theme.themeCategory || "Não informada")}</strong></div>
+      <div class="theme-detail"><span>Itens inclusos</span><strong>${theme.items.length} itens</strong></div>
+      <strong class="theme-price">${currency(theme.packagePrice)}</strong>
+      <span class="client-expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.down}</svg></span>
+    </article>
+    <div class="theme-details-panel" data-theme-details="${theme.id}" hidden>
+      ${theme.themeDescription ? `<div class="client-detail-item"><span>Descrição</span><strong>${escapeHtml(theme.themeDescription)}</strong></div>` : ""}
+      <div class="theme-included-list">${theme.items.map((item) => `<span class="theme-included-item">${escapeHtml(item.name)} · ${item.quantity}x · ${currency(item.price)}</span>`).join("")}</div>
+      <div class="theme-detail-actions"><button class="secondary-button theme-edit-button" type="button" data-edit-theme="${theme.id}">Editar pacote</button></div>
+    </div>
+  `).join("");
+}
+
+function showCatalogList() {
+  catalogFormView.hidden = true;
+  catalogListView.hidden = false;
+  renderThemes(themeSearch.value);
+}
+
+function addThemeItem(data = {}) {
+  const row = document.createElement("div");
+  row.className = "theme-item-row";
+  row.innerHTML = `
+    <input class="theme-item-name" placeholder="Nome do item ou serviço" value="${escapeHtml(data.name || "")}" required />
+    <select class="theme-item-type"><option>Locação</option><option>Serviço</option><option>Personalizado</option></select>
+    <input class="theme-item-quantity" type="number" min="1" value="${data.quantity || 1}" aria-label="Quantidade" />
+    <input class="theme-item-price" inputmode="decimal" placeholder="Valor individual" value="${data.price ? String(data.price).replace(".", ",") : ""}" />
+    <button class="remove-quote-item remove-theme-item" type="button" aria-label="Remover item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.trash}</svg></button>
+  `;
+  if (data.type) row.querySelector(".theme-item-type").value = data.type;
+  themeItems.appendChild(row);
+}
+
+function showThemeForm(themeId = null) {
+  editingThemeId = themeId;
+  catalogListView.hidden = true;
+  catalogFormView.hidden = false;
+  themeForm.reset();
+  themeItems.innerHTML = "";
+  themeFormTitle.textContent = themeId ? "Editar tema" : "Novo tema";
+  if (themeId) {
+    const theme = getThemes().find((item) => String(item.id) === String(themeId));
+    if (theme) {
+      document.querySelector("#themeName").value = theme.themeName;
+      document.querySelector("#packageName").value = theme.packageName;
+      document.querySelector("#themeCategory").value = theme.themeCategory || "";
+      document.querySelector("#packagePrice").value = String(theme.packagePrice).replace(".", ",");
+      document.querySelector("#themeDescription").value = theme.themeDescription || "";
+      theme.items.forEach(addThemeItem);
+    }
+  } else {
+    addThemeItem();
+  }
+}
+
+function renderCalendar() {
+  const year = visibleCalendarDate.getFullYear();
+  const month = visibleCalendarDate.getMonth();
+  calendarMonth.textContent = visibleCalendarDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const first = new Date(year, month, 1);
+  const start = new Date(year, month, 1 - first.getDay());
+  const approved = getQuotes().filter((quote) => quote.status === "approved" && quote.depositPaid && quote.eventDate);
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  calendarGrid.innerHTML = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const events = approved.filter((quote) => quote.eventDate === iso);
+    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}"><span class="calendar-day-number">${date.getDate()}</span>${events.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
+  }).join("");
+}
+
+function openSignalReversal(quoteId) {
+  pendingSignalReversalId = quoteId;
+  confirmModal.hidden = false;
+}
+
+function closeSignalReversal() {
+  pendingSignalReversalId = null;
+  confirmModal.hidden = true;
+}
+
+function showAgendaQuoteDetails(quoteId) {
+  const quote = getQuotes().find((item) => String(item.id) === String(quoteId));
+  if (!quote) return;
+  const client = getClients().find((item) => String(item.id) === String(quote.quoteClient)) || {};
+  const clientName = client.tradeName || client.clientName || "Cliente não encontrado";
+  agendaDetailsContent.innerHTML = `
+    <div class="agenda-detail-header">
+      <span class="eyebrow">Festa confirmada</span>
+      <h2 id="agendaDetailsTitle">${escapeHtml(quote.eventName || "Detalhes da festa")}</h2>
+      <span>${escapeHtml(clientName)}</span>
+    </div>
+    <div class="agenda-detail-grid">
+      <div><span>Data e horário</span><strong>${formatEventDate(quote.eventDate)}${quote.eventTime ? ` às ${quote.eventTime}` : ""}</strong></div>
+      <div><span>Local</span><strong>${escapeHtml(quote.eventLocation || "Não informado")}</strong></div>
+      <div><span>Tema</span><strong>${escapeHtml(quote.eventTheme || "Não informado")}</strong></div>
+      <div><span>Telefone / WhatsApp</span><strong>${escapeHtml(client.phone || "Não informado")}</strong></div>
+    </div>
+    <div class="agenda-detail-items">
+      <span>Peças e serviços</span>
+      ${(quote.items || []).map((item) => `<div class="agenda-detail-item"><strong>${escapeHtml(item.description)}</strong><span>${item.quantity}x · ${currency(item.price)}</span></div>`).join("")}
+      <div class="agenda-detail-item"><strong>Total do orçamento</strong><strong>${currency(quote.total)}</strong></div>
+    </div>
+  `;
+  agendaDetailsModal.hidden = false;
+}
+
+function currency(value) {
+  return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function getQuotes() {
+  return quotesCache;
+}
+
+function quoteClientName(quote) {
+  const client = getClients().find((item) => String(item.id) === String(quote.quoteClient));
+  return client ? client.tradeName || client.clientName || "Cliente sem nome" : "Cliente não encontrado";
+}
+
+function quoteNumber(quote, index) {
+  return `#${String(index + 1).padStart(5, "0")}`;
+}
+
+function formatEventDate(value) {
+  if (!value) return "Data não informada";
+  return new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR");
+}
+
+function renderQuotes(query = "") {
+  const allQuotes = getQuotes();
+  const normalized = query.toLocaleLowerCase("pt-BR").trim();
+  const quotes = allQuotes.map((quote, index) => ({ quote, index })).filter(({ quote, index }) => {
+    const searchable = [quoteClientName(quote), quote.eventName, quoteNumber(quote, index)].join(" ").toLocaleLowerCase("pt-BR");
+    return !normalized || searchable.includes(normalized);
+  });
+
+  quoteCount.textContent = `${quotes.length} ${quotes.length === 1 ? "orçamento" : "orçamentos"}`;
+  emptyQuotes.hidden = quotes.length > 0 || Boolean(query.trim());
+  quotesList.innerHTML = quotes.map(({ quote, index }) => {
+    const clientName = quoteClientName(quote);
+    return `
+      <article class="quote-management-row">
+        <div class="quote-management-main">
+          <div class="client-avatar">${escapeHtml(clientInitials(clientName))}</div>
+          <div>
+            <strong>${escapeHtml(clientName)}</strong>
+            <span>${quoteNumber(quote, index)} · ${escapeHtml(quote.eventName || "Festa sem nome")}</span>
+          </div>
+        </div>
+        <div class="quote-management-detail">
+          <span>Evento</span>
+          <strong>${escapeHtml(quote.eventName || "Não informado")}</strong>
+        </div>
+        <div class="quote-management-detail">
+          <span>Data</span>
+          <strong>${formatEventDate(quote.eventDate)}</strong>
+        </div>
+        <strong class="quote-management-value">${currency(quote.total)}</strong>
+        <button class="status ${quote.status === "approved" && quote.depositPaid ? "approved" : "draft"} quote-status-action" type="button" data-confirm-quote="${quote.id}">${quote.status === "approved" && quote.depositPaid ? "Sinal recebido" : "Confirmar sinal"}</button>
+        <button class="quote-edit-action" type="button" data-quote-edit="${quote.id}" aria-label="Editar orçamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.edit}</svg></button>
+        <button class="quote-pdf-action" type="button" data-quote-pdf="${quote.id}" aria-label="Visualizar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.file}</svg></button>
+      </article>
+    `;
+  }).join("");
+
+  if (!quotes.length && query.trim()) {
+    quotesList.innerHTML = `
+      <div class="empty-clients">
+        <span class="empty-icon"><span data-icon="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.search}</svg></span></span>
+        <strong>Nenhum orçamento encontrado</strong>
+        <p>Tente buscar por outro cliente, festa ou número.</p>
+      </div>
+    `;
+  }
+}
+
+function showQuoteList() {
+  quoteFormView.hidden = true;
+  quotePdfView.hidden = true;
+  quoteListView.hidden = false;
+  renderQuotes(quoteSearch.value);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showQuoteForm(quoteId = null) {
+  editingQuoteId = quoteId;
+  quoteListView.hidden = true;
+  quotePdfView.hidden = true;
+  quoteFormView.hidden = false;
+  quoteForm.reset();
+  quoteItems.innerHTML = "";
+  quoteDiscount.value = "0,00";
+  quoteDelivery.value = "0,00";
+  quoteDepositPercent.value = "50";
+
+  if (quoteId) {
+    const quote = getQuotes().find((item) => String(item.id) === String(quoteId));
+    if (quote) {
+      prepareQuotePage();
+      // fill header fields
+      const fields = ["quoteClient", "eventName", "eventDate", "eventTime", "eventLocation", "quoteValidity", "paymentMethod", "quoteNotes"];
+      fields.forEach((name) => {
+        const el = quoteForm.elements[name];
+        if (el && quote[name] !== undefined) el.value = quote[name];
+      });
+      quoteDiscount.value = quote.discount ? String(quote.discount).replace(".", ",") : "0,00";
+      quoteDelivery.value = quote.delivery ? String(quote.delivery).replace(".", ",") : "0,00";
+      quoteDepositPercent.value = quote.depositPercent || 50;
+      (quote.items || []).forEach((item) => addQuoteItem(item));
+      updateQuoteTotals();
+      // update form title
+      const heading = quoteFormView.querySelector("h1, h2");
+      if (heading) heading.textContent = "Editar orçamento";
+      const submitBtn = quoteForm.querySelector("[type=submit]");
+      if (submitBtn) submitBtn.textContent = "Salvar alterações";
+    }
+  } else {
+    const heading = quoteFormView.querySelector("h1, h2");
+    if (heading) heading.textContent = "Novo orçamento";
+    const submitBtn = quoteForm.querySelector("[type=submit]");
+    if (submitBtn) submitBtn.textContent = "Salvar orçamento";
+    prepareQuotePage();
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderQuotePdf(quote) {
+  const allQuotes = getQuotes();
+  const index = allQuotes.findIndex((item) => String(item.id) === String(quote.id));
+  const client = getClients().find((item) => String(item.id) === String(quote.quoteClient)) || {};
+  const clientName = client.tradeName || client.clientName || "Cliente não encontrado";
+  const itemsSubtotal = (quote.items || []).reduce((total, item) => total + Number(item.quantity || 0) * Number(item.price || 0), 0);
+  const total = Number(quote.total || 0);
+  const depositPercent = Number(quote.depositPercent || 50);
+  const deposit = total * depositPercent / 100;
+  const clientAddress = [client.street, client.number, client.district, client.city, client.state].filter(Boolean).join(", ");
+  const createdAt = new Date(Number(quote.id)).toLocaleDateString("pt-BR");
+
+  pdfDocument.innerHTML = `
+    <header class="pdf-header">
+      <div class="pdf-brand">
+        <img src="assets/yupii-wordmark.png" alt="Yupii" />
+        <div class="pdf-brand-copy">
+          <strong>${companyInfo.name}</strong>
+          <span>CNPJ ${companyInfo.cnpj}</span>
+          <span>${companyInfo.owner}</span>
+          <span>${companyInfo.address} · ${companyInfo.phone}</span>
+        </div>
+      </div>
+      <div class="pdf-number">
+        <span>ORÇAMENTO</span>
+        <strong>${quoteNumber(quote, Math.max(index, 0))}</strong>
+        <span>Emitido em ${createdAt}</span>
+      </div>
+    </header>
+
+    <section class="pdf-intro">
+      <h2>${escapeHtml(quote.eventName || "Orçamento para evento")}</h2>
+      <p>Proposta de locação de materiais, personalizados e serviços para o seu evento.</p>
+    </section>
+
+    <section class="pdf-meta-grid">
+      <div class="pdf-meta-item"><span>Cliente</span><strong>${escapeHtml(clientName)}</strong></div>
+      <div class="pdf-meta-item"><span>${client.personType === "cnpj" ? "CNPJ" : "CPF"}</span><strong>${escapeHtml(client.document || "Não informado")}</strong></div>
+      <div class="pdf-meta-item"><span>Telefone / WhatsApp</span><strong>${escapeHtml(client.phone || "Não informado")}</strong></div>
+      <div class="pdf-meta-item"><span>Data e horário do evento</span><strong>${formatEventDate(quote.eventDate)}${quote.eventTime ? ` às ${escapeHtml(quote.eventTime)}` : ""}</strong></div>
+      <div class="pdf-meta-item"><span>Local do evento</span><strong>${escapeHtml(quote.eventLocation || clientAddress || "Não informado")}</strong></div>
+      <div class="pdf-meta-item"><span>Tema</span><strong>${escapeHtml(quote.eventTheme || "Não informado")}</strong></div>
+    </section>
+
+    <section class="pdf-section">
+      <span class="pdf-section-title">Peças e serviços incluídos</span>
+      <table class="pdf-items-table">
+        <thead><tr><th>Descrição</th><th>Tipo</th><th>Qtd.</th><th>Valor unitário</th><th>Total</th></tr></thead>
+        <tbody>${(quote.items || []).map((item) => `
+          <tr><td>${escapeHtml(item.description)}</td><td>${escapeHtml(item.type)}</td><td>${item.quantity}</td><td>${currency(item.price)}</td><td>${currency(Number(item.quantity) * Number(item.price))}</td></tr>
+        `).join("")}</tbody>
+      </table>
+    </section>
+
+    <section class="pdf-financial">
+      <div class="pdf-conditions">
+        <span class="pdf-section-title">Condições da proposta</span>
+        <p>Validade deste orçamento: ${escapeHtml(quote.validity || "15")} dias.</p>
+        <p>Forma de pagamento: ${escapeHtml(quote.paymentMethod || "Pix")}.</p>
+        <p>A reserva da data será confirmada após o pagamento do sinal.</p>
+        ${quote.notes ? `<p><strong>Observações:</strong> ${escapeHtml(quote.notes)}</p>` : ""}
+      </div>
+      <div>
+        <div class="pdf-totals">
+          <div><span>Itens e serviços</span><strong>${currency(itemsSubtotal)}</strong></div>
+          <div><span>Desconto</span><strong>- ${currency(quote.discount)}</strong></div>
+          <div><span>Frete / entrega</span><strong>${currency(quote.delivery)}</strong></div>
+          <div class="pdf-grand-total"><span>Total</span><strong>${currency(total)}</strong></div>
+        </div>
+        <div class="pdf-payment-box">
+          <span>Sinal para reservar a data</span>
+          <strong>${depositPercent}% · ${currency(deposit)}</strong>
+        </div>
+      </div>
+    </section>
+
+    <footer class="pdf-footer">
+      <div class="pdf-signature"><strong>${companyInfo.owner}</strong><span>Yupii Personalizados e Festas</span></div>
+      <div class="pdf-signature"><strong>${escapeHtml(clientName)}</strong><span>Aceite do cliente</span></div>
+    </footer>
+  `;
+}
+
+function showQuotePdf(quoteId) {
+  const quote = getQuotes().find((item) => String(item.id) === String(quoteId));
+  if (!quote) return;
+  activePdfQuote = quote;
+  quoteListView.hidden = true;
+  quoteFormView.hidden = true;
+  quotePdfView.hidden = false;
+  renderQuotePdf(quote);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function parseMoney(value) {
+  const normalized = String(value || "0").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+  return Number(normalized) || 0;
+}
+
+function addQuoteItem(data = {}, container = quoteItems) {
+  const row = document.createElement("div");
+  row.className = "quote-item-row";
+  if (data.extraClass) row.classList.add(data.extraClass);
+  row.innerHTML = `
+    <input class="item-description" aria-label="Descrição do item" placeholder="Ex.: Painel redondo" value="${escapeHtml(data.description || "")}" required />
+    <select class="item-type" aria-label="Tipo do item"><option>Locação</option><option>Serviço</option><option>Personalizado</option><option>Desconto</option></select>
+    <input class="item-quantity" aria-label="Quantidade" type="number" min="1" value="${data.quantity || 1}" />
+    <input class="item-price" aria-label="Valor unitário" inputmode="decimal" placeholder="0,00" value="${data.price !== undefined && data.price !== "" ? String(data.price).replace(".", ",") : ""}" />
+    <strong class="quote-item-total">R$ 0,00</strong>
+    <button class="remove-quote-item" type="button" aria-label="Remover item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.trash}</svg></button>
+  `;
+  if (data.type) row.querySelector(".item-type").value = data.type;
+  container.appendChild(row);
+  updateQuoteTotals();
+  return row;
+}
+
+function updateQuoteTotals() {
+  let subtotal = 0;
+  quoteItems.querySelectorAll(".quote-item-row").forEach((row) => {
+    const quantity = Number(row.querySelector(".item-quantity").value) || 0;
+    const price = parseMoney(row.querySelector(".item-price").value);
+    const itemTotal = quantity * price;
+    row.querySelector(".quote-item-total").textContent = currency(itemTotal);
+    subtotal += itemTotal;
+  });
+  const total = Math.max(0, subtotal - parseMoney(quoteDiscount.value) + parseMoney(quoteDelivery.value));
+  const deposit = total * Math.min(100, Math.max(0, Number(quoteDepositPercent.value) || 0)) / 100;
+  quoteSubtotal.textContent = currency(subtotal);
+  quoteTotal.textContent = currency(total);
+  quoteDeposit.textContent = currency(deposit);
+}
+
+function renderPackagePicker() {
+  const themes = getThemes();
+  emptyPackagePicker.hidden = themes.length > 0;
+  packagePickerList.innerHTML = themes.map((theme) => {
+    const itemsSum = (theme.items || []).reduce((total, item) => total + Number(item.quantity || 0) * Number(item.price || 0), 0);
+    const savings = itemsSum - Number(theme.packagePrice || 0);
+    return `
+      <div class="package-picker-item" data-package-item="${theme.id}">
+        <div class="package-picker-row" data-package-toggle="${theme.id}">
+          <div class="package-picker-main">
+            <strong>${escapeHtml(theme.themeName)}</strong>
+            <span>${escapeHtml(theme.packageName)}${theme.themeCategory ? ` · ${escapeHtml(theme.themeCategory)}` : ""}</span>
+          </div>
+          <div class="package-picker-count">${(theme.items || []).length} ${(theme.items || []).length === 1 ? "item incluso" : "itens inclusos"}</div>
+          <strong class="package-picker-price">${currency(theme.packagePrice)}</strong>
+          <span class="client-expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.down}</svg></span>
+        </div>
+        <div class="package-picker-details">
+          ${theme.themeDescription ? `<div class="client-detail-item"><span>Descrição</span><strong>${escapeHtml(theme.themeDescription)}</strong></div>` : ""}
+          <div class="theme-included-list">${(theme.items || []).map((item) => `<span class="theme-included-item">${escapeHtml(item.name)} · ${item.quantity}x · ${currency(item.price)}</span>`).join("")}</div>
+          ${savings > 0 ? `<span class="package-picker-savings">Economia de ${currency(savings)} em relação à soma dos itens (${currency(itemsSum)}).</span>` : ""}
+          <button class="primary-button package-picker-add" type="button" data-package-add="${theme.id}"><span data-icon="plus"></span> Adicionar ao orçamento</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+  packagePickerList.querySelectorAll("[data-icon]").forEach((element) => {
+    const icon = icons[element.dataset.icon];
+    if (!icon || element.closest(".package-picker-row")) return;
+    element.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
+  });
+}
+
+function openPackagePicker() {
+  renderPackagePicker();
+  packagePickerModal.hidden = false;
+}
+
+function closePackagePicker() {
+  packagePickerModal.hidden = true;
+}
+
+function addPackageToQuote(themeId) {
+  const theme = getThemes().find((item) => String(item.id) === String(themeId));
+  if (!theme) return;
+
+  const group = document.createElement("div");
+  group.className = "quote-package-group";
+  group.dataset.packageGroup = theme.id;
+  group.innerHTML = `
+    <div class="quote-package-header">
+      <strong><span data-icon="box"></span> ${escapeHtml(theme.themeName)} · ${escapeHtml(theme.packageName)}</strong>
+      <span>Pacote do catálogo · ${currency(theme.packagePrice)}</span>
+    </div>
+  `;
+  group.querySelector("[data-icon]").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.box}</svg>`;
+  quoteItems.appendChild(group);
+
+  let itemsSum = 0;
+  (theme.items || []).forEach((item) => {
+    addQuoteItem({ description: item.name, type: item.type, quantity: item.quantity, price: item.price }, group);
+    itemsSum += Number(item.quantity || 0) * Number(item.price || 0);
+  });
+
+  const savings = itemsSum - Number(theme.packagePrice || 0);
+  if (savings > 0) {
+    addQuoteItem({
+      description: `Desconto do pacote: ${theme.themeName} · ${theme.packageName}`,
+      type: "Desconto",
+      quantity: 1,
+      price: -savings,
+      extraClass: "package-discount-row",
+    }, group);
+  }
+
+  updateQuoteTotals();
+  toast.textContent = "Pacote adicionado ao orçamento.";
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+}
+
+addQuotePackageButton.addEventListener("click", openPackagePicker);
+closePackagePickerButton.addEventListener("click", closePackagePicker);
+packagePickerModal.addEventListener("click", (event) => {
+  if (event.target === packagePickerModal) closePackagePicker();
+});
+packagePickerList.addEventListener("click", (event) => {
+  const addButton = event.target.closest("[data-package-add]");
+  if (addButton) {
+    addPackageToQuote(addButton.dataset.packageAdd);
+    closePackagePicker();
+    return;
+  }
+  const toggle = event.target.closest("[data-package-toggle]");
+  if (toggle) {
+    const item = toggle.closest(".package-picker-item");
+    item.classList.toggle("expanded");
+  }
+});
+
+function prepareQuotePage() {
+  const selected = quoteClient.value;
+  quoteClient.innerHTML = '<option value="">Selecione um cliente</option>' + getClients().map((client) => {
+    const name = client.tradeName || client.clientName || "Cliente sem nome";
+    return `<option value="${client.id}">${escapeHtml(name)} · ${escapeHtml(client.document || "")}</option>`;
+  }).join("");
+  quoteClient.value = selected;
+  if (!quoteItems.children.length) {
+    addQuoteItem({ description: "Locação de peças decorativas", type: "Locação", quantity: 1 });
+    addQuoteItem({ description: "Montagem e desmontagem", type: "Serviço", quantity: 1 });
+  }
+}
+
+addQuoteItemButton.addEventListener("click", () => addQuoteItem());
+newQuoteActions.forEach((button) => button.addEventListener("click", showQuoteForm));
+quoteSearch.addEventListener("input", () => renderQuotes(quoteSearch.value));
+quotesList.addEventListener("click", async (event) => {
+  const confirmButton = event.target.closest("[data-confirm-quote]");
+  if (confirmButton) {
+    const quotes = getQuotes();
+    const quote = quotes.find((item) => String(item.id) === String(confirmButton.dataset.confirmQuote));
+    if (quote) {
+      if (quote.status === "approved" && quote.depositPaid) {
+        openSignalReversal(quote.id);
+      } else {
+        quote.status = "approved";
+        quote.depositPaid = true;
+        await saveQuote(quote);
+        renderQuotes(quoteSearch.value);
+        toast.textContent = "Sinal confirmado. Evento adicionado à agenda.";
+        toast.classList.add("visible");
+        window.setTimeout(() => toast.classList.remove("visible"), 2800);
+      }
+    }
+    return;
+  }
+  const editButton = event.target.closest("[data-quote-edit]");
+  if (editButton) {
+    showPage("quotes");
+    showQuoteForm(editButton.dataset.quoteEdit);
+    return;
+  }
+  const button = event.target.closest("[data-quote-pdf]");
+  if (button) showQuotePdf(button.dataset.quotePdf);
+});
+
+// ─── Home page dynamic render ───────────────────────────────────────────────
+const homeQuoteList = document.querySelector("#homeQuoteList");
+const homeEmptyQuotes = document.querySelector("#homeEmptyQuotes");
+const homeEventList = document.querySelector("#homeEventList");
+const homeEmptyEvents = document.querySelector("#homeEmptyEvents");
+const homeViewAllQuotes = document.querySelector("#homeViewAllQuotes");
+const homeViewAgenda = document.querySelector("#homeViewAgenda");
+
+const monthNames = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+const monthAccentColors = ["mint","peach","mint","","peach","","mint","peach","","mint","peach",""];
+
+function renderHome() {
+  const allQuotes = getQuotes();
+  // ── Orçamentos recentes: últimos 4 ──────────────────────────────────────
+  const recentQuotes = [...allQuotes].reverse().slice(0, 4);
+  homeEmptyQuotes.hidden = recentQuotes.length > 0;
+  const quoteRows = recentQuotes.map((quote, i) => {
+    const globalIndex = allQuotes.findIndex((q) => String(q.id) === String(quote.id));
+    const clientName = quoteClientName(quote);
+    const initials = clientInitials(clientName);
+    const isApproved = quote.status === "approved" && quote.depositPaid;
+    const statusLabel = isApproved ? "Aprovado" : "Rascunho";
+    const statusClass = isApproved ? "approved" : "draft";
+    let dateLabel = "";
+    if (quote.eventDate) {
+      const d = new Date(`${quote.eventDate}T12:00:00`);
+      dateLabel = `${String(d.getDate()).padStart(2, "0")} ${monthNames[d.getMonth()]}`;
+    }
+    return `
+      <article class="quote-row" style="cursor:pointer" data-home-open-quote="${quote.id}">
+        <div class="quote-client">
+          <div class="client-avatar">${escapeHtml(initials)}</div>
+          <div>
+            <strong>${escapeHtml(clientName)}</strong>
+            <span>${quoteNumber(quote, globalIndex)} · ${escapeHtml(quote.eventName || "Festa")}</span>
+          </div>
+        </div>
+        ${dateLabel ? `<div class="quote-date"><span>Data do evento</span><strong>${dateLabel}</strong></div>` : ""}
+        <strong class="quote-value">${currency(quote.total)}</strong>
+        <span class="status ${statusClass}">${statusLabel}</span>
+      </article>
+    `;
+  }).join("");
+  homeQuoteList.querySelectorAll(".quote-row").forEach((el) => el.remove());
+  homeEmptyQuotes.insertAdjacentHTML("beforebegin", quoteRows);
+
+  // ── Próximos eventos: aprovados com data >= hoje ─────────────────────────
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = allQuotes
+    .filter((q) => q.status === "approved" && q.depositPaid && q.eventDate)
+    .map((q) => ({ q, d: new Date(`${q.eventDate}T12:00:00`) }))
+    .filter(({ d }) => d >= today)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 4);
+  homeEmptyEvents.hidden = upcoming.length > 0;
+  const eventCards = upcoming.map(({ q, d }, i) => {
+    const accentClass = monthAccentColors[d.getMonth()] ? `class="event-date ${monthAccentColors[d.getMonth()]}"` : `class="event-date"`;
+    const clientName = quoteClientName(q);
+    const timeLabel = q.eventTime ? `${q.eventTime} · ` : "";
+    return `
+      <article class="event-card">
+        <div ${accentClass}><strong>${d.getDate()}</strong><span>${monthNames[d.getMonth()]}</span></div>
+        <div>
+          <strong>${escapeHtml(q.eventName || "Evento")}</strong>
+          <span>${timeLabel}${escapeHtml(clientName)}</span>
+        </div>
+      </article>
+    `;
+  }).join("");
+  homeEventList.querySelectorAll(".event-card").forEach((el) => el.remove());
+  homeEmptyEvents.insertAdjacentHTML("beforebegin", eventCards);
+}
+
+homeQuoteList.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-home-open-quote]");
+  if (row) {
+    showPage("quotes");
+    showQuoteForm(row.dataset.homeOpenQuote);
+  }
+});
+
+homeViewAllQuotes.addEventListener("click", () => showPage("quotes"));
+homeViewAgenda.addEventListener("click", () => showPage("agenda"));
+cancelConfirm.addEventListener("click", closeSignalReversal);
+approveConfirm.addEventListener("click", async () => {
+  const quotes = getQuotes();
+  const quote = quotes.find((item) => String(item.id) === String(pendingSignalReversalId));
+  if (quote) {
+    quote.status = "draft";
+    quote.depositPaid = false;
+    await saveQuote(quote);
+    renderQuotes(quoteSearch.value);
+    renderCalendar();
+    toast.textContent = "Confirmação revertida. Evento removido da agenda.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  }
+  closeSignalReversal();
+});
+confirmModal.addEventListener("click", (event) => {
+  if (event.target === confirmModal) closeSignalReversal();
+});
+calendarGrid.addEventListener("click", (event) => {
+  const eventButton = event.target.closest("[data-agenda-quote]");
+  if (eventButton) showAgendaQuoteDetails(eventButton.dataset.agendaQuote);
+});
+closeAgendaDetails.addEventListener("click", () => agendaDetailsModal.hidden = true);
+agendaDetailsModal.addEventListener("click", (event) => {
+  if (event.target === agendaDetailsModal) agendaDetailsModal.hidden = true;
+});
+backFromPdf.addEventListener("click", showQuoteList);
+shareQuotePdf.addEventListener("click", async () => {
+  if (!activePdfQuote || typeof html2pdf === "undefined") {
+    toast.textContent = "Não foi possível gerar o PDF. Verifique sua conexão.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    return;
+  }
+
+  const originalText = shareQuotePdf.innerHTML;
+  shareQuotePdf.disabled = true;
+  shareQuotePdf.textContent = "Gerando PDF...";
+
+  try {
+    const quoteIndex = Math.max(0, getQuotes().findIndex((quote) => String(quote.id) === String(activePdfQuote.id)));
+    const fileName = `orcamento-yupii-${quoteNumber(activePdfQuote, quoteIndex).replace("#", "")}.pdf`;
+    const options = {
+      margin: 0,
+      filename: fileName,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    };
+    const blob = await html2pdf().set(options).from(pdfDocument).outputPdf("blob");
+    const file = new File([blob], fileName, { type: "application/pdf" });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Orçamento Yupii",
+        text: `Orçamento ${quoteNumber(activePdfQuote, quoteIndex)} - Yupii Personalizados e Festas`,
+      });
+    } else {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.textContent = "PDF salvo no aparelho.";
+      toast.classList.add("visible");
+      window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    }
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      toast.textContent = "Não foi possível compartilhar o PDF.";
+      toast.classList.add("visible");
+      window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    }
+  } finally {
+    shareQuotePdf.disabled = false;
+    shareQuotePdf.innerHTML = originalText;
+  }
+});
+quoteItems.addEventListener("input", updateQuoteTotals);
+quoteItems.addEventListener("click", (event) => {
+  const removeButton = event.target.closest(".remove-quote-item");
+  if (removeButton) {
+    removeButton.closest(".quote-item-row").remove();
+    updateQuoteTotals();
+  }
+});
+[quoteDiscount, quoteDelivery, quoteDepositPercent].forEach((input) => input.addEventListener("input", updateQuoteTotals));
+cancelQuote.addEventListener("click", showQuoteList);
+
+quoteForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const quotes = getQuotes();
+  const data = Object.fromEntries(new FormData(quoteForm).entries());
+  data.company = companyInfo;
+  data.items = [...quoteItems.querySelectorAll(".quote-item-row")].map((row) => ({
+    description: row.querySelector(".item-description").value,
+    type: row.querySelector(".item-type").value,
+    quantity: Number(row.querySelector(".item-quantity").value),
+    price: parseMoney(row.querySelector(".item-price").value),
+  }));
+  data.discount = parseMoney(quoteDiscount.value);
+  data.delivery = parseMoney(quoteDelivery.value);
+  data.depositPercent = Number(quoteDepositPercent.value) || 0;
+  data.total = parseMoney(quoteTotal.textContent);
+
+  if (editingQuoteId) {
+    const index = quotes.findIndex((q) => String(q.id) === String(editingQuoteId));
+    if (index !== -1) {
+      data.id = quotes[index].id;
+      data.status = quotes[index].status;
+      data.depositPaid = quotes[index].depositPaid;
+    }
+    toast.textContent = "Orçamento atualizado com sucesso.";
+  } else {
+    data.id = Date.now();
+    data.status = "draft";
+    toast.textContent = "Orçamento salvo como rascunho.";
+  }
+
+  editingQuoteId = null;
+  await saveQuote(data);
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  showQuoteList();
+});
+
+function formatCpf(value) {
+  return digits(value).slice(0, 11).replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function formatCnpj(value) {
+  return digits(value).slice(0, 14).replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d)/, ".$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+function currentPersonType() {
+  return document.querySelector('input[name="personType"]:checked').value;
+}
+
+function clearCompanyFields() {
+  [
+    "clientName",
+    "tradeName",
+    "phone",
+    "email",
+    "zipCode",
+    "street",
+    "number",
+    "district",
+    "city",
+    "state",
+  ].forEach((id) => {
+    document.querySelector(`#${id}`).value = "";
+  });
+}
+
+function updatePersonType() {
+  const isCompany = currentPersonType() === "cnpj";
+  clearCompanyFields();
+  companyOnlyFields.forEach((field) => field.hidden = !isCompany);
+  searchCnpjButton.hidden = !isCompany;
+  documentLabel.textContent = isCompany ? "CNPJ" : "CPF";
+  nameLabel.textContent = isCompany ? "Razão social" : "Nome completo";
+  document.querySelector("#clientName").placeholder = isCompany ? "Preenchida pela busca ou digitada manualmente" : "Ex.: Maria da Silva";
+  identificationHelp.textContent = isCompany ? "Digite o CNPJ para preencher os dados automaticamente." : "Informe o CPF e o nome do cliente.";
+  documentInput.placeholder = isCompany ? "00.000.000/0000-00" : "000.000.000-00";
+  documentInput.value = "";
+  documentMessage.textContent = isCompany ? "Digite o CNPJ e clique em buscar." : "Somente números ou CPF formatado.";
+  documentMessage.className = "";
+  document.querySelectorAll(".type-option").forEach((option) => option.classList.toggle("active", option.querySelector("input").checked));
+}
+
+personTypeInputs.forEach((input) => input.addEventListener("change", updatePersonType));
+documentInput.addEventListener("input", () => {
+  documentInput.value = currentPersonType() === "cnpj" ? formatCnpj(documentInput.value) : formatCpf(documentInput.value);
+  if (currentPersonType() === "cnpj" && digits(documentInput.value).length === 0) {
+    clearCompanyFields();
+    documentMessage.textContent = "Digite o CNPJ e clique em buscar.";
+    documentMessage.className = "";
+  }
+});
+
+searchCnpjButton.addEventListener("click", async () => {
+  const cnpj = digits(documentInput.value);
+  if (cnpj.length !== 14) {
+    documentMessage.textContent = "Informe os 14 números do CNPJ.";
+    documentMessage.className = "error";
+    return;
+  }
+
+  searchCnpjButton.disabled = true;
+  searchCnpjButton.textContent = "Buscando...";
+  documentMessage.textContent = "Consultando dados públicos da empresa...";
+  documentMessage.className = "";
+
+  try {
+    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    if (!response.ok) throw new Error("CNPJ não encontrado");
+    const company = await response.json();
+    document.querySelector("#clientName").value = company.razao_social || "";
+    document.querySelector("#tradeName").value = company.nome_fantasia || "";
+    document.querySelector("#phone").value = company.ddd_telefone_1 || "";
+    document.querySelector("#email").value = company.email || "";
+    document.querySelector("#zipCode").value = company.cep || "";
+    document.querySelector("#street").value = company.logradouro || "";
+    document.querySelector("#number").value = company.numero || "";
+    document.querySelector("#district").value = company.bairro || "";
+    document.querySelector("#city").value = company.municipio || "";
+    document.querySelector("#state").value = company.uf || "";
+    documentMessage.textContent = "Dados encontrados e preenchidos.";
+    documentMessage.className = "success";
+  } catch {
+    documentMessage.textContent = "Não foi possível localizar esse CNPJ. Você pode preencher os campos manualmente.";
+    documentMessage.className = "error";
+  } finally {
+    searchCnpjButton.disabled = false;
+    searchCnpjButton.innerHTML = `${icons.search ? `<span data-icon="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.search}</svg></span>` : ""} Buscar`;
+  }
+});
+
+clientForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(clientForm).entries());
+  data.id = Date.now();
+  await saveClient(data);
+  clientForm.reset();
+  updatePersonType();
+  toast.textContent = "Cliente salvo com sucesso.";
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  showClientList();
+});
+
+menuButton.addEventListener("click", () => sidebar.classList.toggle("open"));
+
+document.addEventListener("click", (event) => {
+  if (
+    window.innerWidth <= 760 &&
+    sidebar.classList.contains("open") &&
+    !sidebar.contains(event.target) &&
+    !menuButton.contains(event.target)
+  ) {
+    sidebar.classList.remove("open");
+  }
+});
+
+newQuoteButton.addEventListener("click", () => {
+  showPage("quotes");
+  showQuoteForm();
+});
