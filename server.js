@@ -7,11 +7,14 @@ const PORT = process.env.PORT || 3000;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : undefined,
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+
+function createId() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
 
 function createResourceRouter(table) {
   const router = express.Router();
@@ -29,7 +32,7 @@ function createResourceRouter(table) {
   router.post("/", async (req, res) => {
     try {
       const item = req.body;
-      if (!item.id) item.id = Date.now();
+      if (!item.id) item.id = createId();
       await pool.query(
         `INSERT INTO ${table} (id, data) VALUES ($1, $2)
          ON CONFLICT (id) DO UPDATE SET data = $2`,
@@ -60,6 +63,11 @@ function createResourceRouter(table) {
 app.use("/api/clients", createResourceRouter("clients"));
 app.use("/api/themes", createResourceRouter("themes"));
 app.use("/api/quotes", createResourceRouter("quotes"));
+
+app.use(express.static(path.join(__dirname), {
+  dotfiles: "ignore",
+  index: "index.html",
+}));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));

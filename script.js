@@ -1,6 +1,10 @@
 // ─── Camada de dados (API + Neon) ───────────────────────────────────────────
 const API_BASE = "/api";
 
+function createId() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
+
 async function apiGet(resource) {
   const response = await fetch(`${API_BASE}/${resource}`);
   if (!response.ok) throw new Error(`Falha ao buscar ${resource}`);
@@ -412,7 +416,7 @@ themeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const themes = getThemes();
   const theme = {
-    id: editingThemeId || Date.now(),
+    id: editingThemeId || createId(),
     themeName: document.querySelector("#themeName").value,
     packageName: document.querySelector("#packageName").value,
     themeCategory: document.querySelector("#themeCategory").value,
@@ -539,7 +543,7 @@ function renderCalendar() {
   calendarMonth.textContent = visibleCalendarDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const first = new Date(year, month, 1);
   const start = new Date(year, month, 1 - first.getDay());
-  const events = getQuotes().filter((quote) => quote.inAgenda && !quote.archived && quote.status !== "cancelled" && quote.eventDate);
+  const events = getQuotes().filter((quote) => isDashboardQuote(quote) && quote.inAgenda && quote.eventDate);
   const today = new Date();
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   calendarGrid.innerHTML = Array.from({ length: 42 }, (_, index) => {
@@ -604,6 +608,14 @@ function getQuotes() {
 function quoteClientName(quote) {
   const client = getClients().find((item) => String(item.id) === String(quote.quoteClient));
   return client ? client.tradeName || client.clientName || "Cliente sem nome" : "Cliente não encontrado";
+}
+
+function hasQuoteClient(quote) {
+  return getClients().some((item) => String(item.id) === String(quote.quoteClient));
+}
+
+function isDashboardQuote(quote) {
+  return hasQuoteClient(quote) && !quote.archived && quote.status !== "cancelled";
 }
 
 function quoteNumber(quote, index) {
@@ -680,13 +692,20 @@ function renderQuotes(query = "") {
           <strong>${formatEventDate(quote.eventDate)}</strong>
         </div>
         <strong class="quote-management-value">${currency(quote.total)}</strong>
-        <button class="status ${isApproved ? "approved" : "draft"} quote-status-action" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "Sinal recebido" : "Confirmar sinal"}">${isApproved ? "Sinal recebido" : "Confirmar sinal"}</button>
-        ${extraTag}
-        <button class="quote-edit-action" type="button" data-quote-edit="${quote.id}" aria-label="Editar orçamento" title="Editar orçamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.edit}</svg></button>
-        <button class="quote-pdf-action" type="button" data-quote-pdf="${quote.id}" aria-label="Visualizar PDF" title="Visualizar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.file}</svg></button>
-        <button class="quote-agenda-action${inAgenda ? " in-agenda" : ""}" type="button" data-quote-agenda="${quote.id}" aria-label="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}" title="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.calendar}</svg></button>
-        <button class="quote-cancel-action" type="button" data-quote-cancel="${quote.id}" aria-label="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}" title="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${isCancelled ? icons.check : icons.x}</svg></button>
-        <button class="quote-archive-action" type="button" data-quote-archive="${quote.id}" aria-label="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}" title="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.archive}</svg></button>
+        <div class="quote-management-states">
+          <button class="quote-status-action ${isApproved ? "is-received" : "is-pending"}" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "Sinal recebido" : "Confirmar sinal"}">
+            <span class="quote-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${isApproved ? icons.check : icons.clock}</svg></span>
+            <span>${isApproved ? "Sinal recebido" : "Confirmar sinal"}</span>
+          </button>
+          ${extraTag}
+        </div>
+        <div class="quote-management-actions">
+          <button class="quote-edit-action" type="button" data-quote-edit="${quote.id}" aria-label="Editar orçamento" title="Editar orçamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.edit}</svg></button>
+          <button class="quote-pdf-action" type="button" data-quote-pdf="${quote.id}" aria-label="Visualizar PDF" title="Visualizar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.file}</svg></button>
+          <button class="quote-agenda-action${inAgenda ? " in-agenda" : ""}" type="button" data-quote-agenda="${quote.id}" aria-label="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}" title="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.calendar}</svg></button>
+          <button class="quote-cancel-action" type="button" data-quote-cancel="${quote.id}" aria-label="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}" title="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${isCancelled ? icons.check : icons.x}</svg></button>
+          <button class="quote-archive-action" type="button" data-quote-archive="${quote.id}" aria-label="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}" title="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.archive}</svg></button>
+        </div>
       </article>
     `;
   }).join("");
@@ -1028,6 +1047,7 @@ quotesList.addEventListener("click", async (event) => {
         quote.depositPaid = true;
         await saveQuote(quote);
         renderQuotes(quoteSearch.value);
+        renderHome();
         toast.textContent = "Sinal confirmado. Evento adicionado à agenda.";
         toast.classList.add("visible");
         window.setTimeout(() => toast.classList.remove("visible"), 2800);
@@ -1064,6 +1084,7 @@ quotesList.addEventListener("click", async (event) => {
       await saveQuote(quote);
       renderQuotes(quoteSearch.value);
       renderCalendar();
+      renderHome();
       toast.classList.add("visible");
       window.setTimeout(() => toast.classList.remove("visible"), 2800);
     }
@@ -1088,6 +1109,7 @@ quotesList.addEventListener("click", async (event) => {
       await saveQuote(quote);
       renderQuotes(quoteSearch.value);
       renderCalendar();
+      renderHome();
       toast.classList.add("visible");
       window.setTimeout(() => toast.classList.remove("visible"), 2800);
     }
@@ -1110,6 +1132,7 @@ quotesList.addEventListener("click", async (event) => {
       }
       await saveQuote(quote);
       renderQuotes(quoteSearch.value);
+      renderHome();
       toast.classList.add("visible");
       window.setTimeout(() => toast.classList.remove("visible"), 2800);
     }
@@ -1131,7 +1154,8 @@ const monthAccentColors = ["mint","peach","mint","","peach","","mint","peach",""
 function renderHome() {
   const allQuotes = getQuotes();
   // ── Orçamentos recentes: últimos 4 ──────────────────────────────────────
-  const recentQuotes = [...allQuotes].reverse().slice(0, 4);
+  const dashboardQuotes = allQuotes.filter(isDashboardQuote);
+  const recentQuotes = [...dashboardQuotes].reverse().slice(0, 4);
   homeEmptyQuotes.hidden = recentQuotes.length > 0;
   const quoteRows = recentQuotes.map((quote, i) => {
     const globalIndex = allQuotes.findIndex((q) => String(q.id) === String(quote.id));
@@ -1166,7 +1190,7 @@ function renderHome() {
   // ── Próximos eventos: aprovados com data >= hoje ─────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
   const upcoming = allQuotes
-    .filter((q) => q.inAgenda && !q.archived && q.status !== "cancelled" && q.eventDate)
+    .filter((q) => isDashboardQuote(q) && q.inAgenda && q.eventDate)
     .map((q) => ({ q, d: new Date(`${q.eventDate}T12:00:00`) }))
     .filter(({ d }) => d >= today)
     .sort((a, b) => a.d - b.d)
@@ -1210,6 +1234,7 @@ approveConfirm.addEventListener("click", async () => {
     await saveQuote(quote);
     renderQuotes(quoteSearch.value);
     renderCalendar();
+    renderHome();
     toast.textContent = "Confirmação revertida. Evento removido da agenda.";
     toast.classList.add("visible");
     window.setTimeout(() => toast.classList.remove("visible"), 2800);
@@ -1234,6 +1259,9 @@ confirmDeleteClient.addEventListener("click", async () => {
   try {
     await removeClient(pendingDeleteClientId);
     renderClients(clientSearch.value);
+    renderQuotes(quoteSearch.value);
+    renderHome();
+    renderCalendar();
     toast.textContent = "Cliente excluído com sucesso.";
     toast.classList.add("visible");
     window.setTimeout(() => toast.classList.remove("visible"), 2800);
@@ -1336,19 +1364,26 @@ quoteForm.addEventListener("submit", async (event) => {
   if (editingQuoteId) {
     const index = quotes.findIndex((q) => String(q.id) === String(editingQuoteId));
     if (index !== -1) {
-      data.id = quotes[index].id;
-      data.status = quotes[index].status;
-      data.depositPaid = quotes[index].depositPaid;
+      const existingQuote = quotes[index];
+      data.id = existingQuote.id;
+      data.status = existingQuote.status;
+      data.depositPaid = Boolean(existingQuote.depositPaid);
+      data.inAgenda = Boolean(existingQuote.inAgenda);
+      data.archived = Boolean(existingQuote.archived);
+      if (existingQuote.archivedAt) data.archivedAt = existingQuote.archivedAt;
+      if (existingQuote.cancelledAt) data.cancelledAt = existingQuote.cancelledAt;
     }
     toast.textContent = "Orçamento atualizado com sucesso.";
   } else {
-    data.id = Date.now();
+    data.id = createId();
     data.status = "draft";
     toast.textContent = "Orçamento salvo como rascunho.";
   }
 
   editingQuoteId = null;
   await saveQuote(data);
+  renderHome();
+  renderCalendar();
   toast.classList.add("visible");
   window.setTimeout(() => toast.classList.remove("visible"), 2800);
   showQuoteList();
@@ -1450,7 +1485,7 @@ searchCnpjButton.addEventListener("click", async () => {
 clientForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(clientForm).entries());
-  data.id = Date.now();
+  data.id = createId();
   await saveClient(data);
   clientForm.reset();
   updatePersonType();
