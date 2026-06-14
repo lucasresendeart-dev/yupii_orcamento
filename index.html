@@ -17,7 +17,16 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <section class="access-screen" id="accessScreen">
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-card">
+        <img src="assets/yupii-wordmark.png" alt="Yupii" />
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <h1>Preparando tudo para você...</h1>
+        <p>Nosso sistema estava descansando e já está acordando. Isso pode levar até 30 segundos na primeira vez.</p>
+      </div>
+    </div>
+
+    <section class="access-screen" id="accessScreen" hidden>
       <form class="access-card" id="accessForm">
         <img src="assets/yupii-wordmark.png" alt="Yupii" />
         <div>

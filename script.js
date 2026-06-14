@@ -109,6 +109,7 @@ const companyInfo = {
 };
 
 const ACCESS_PASSWORD = "123";
+const loadingOverlay = document.querySelector("#loadingOverlay");
 const accessScreen = document.querySelector("#accessScreen");
 const accessForm = document.querySelector("#accessForm");
 const accessPassword = document.querySelector("#accessPassword");
@@ -130,9 +131,23 @@ async function unlockApp() {
   renderHome();
 }
 
-if (sessionStorage.getItem("yupiiAccess") === "granted") {
-  unlockApp();
+async function bootApp() {
+  try {
+    await apiGet("clients");
+  } catch (error) {
+    console.error("Falha ao acordar o servidor:", error);
+  }
+
+  loadingOverlay.hidden = true;
+
+  if (sessionStorage.getItem("yupiiAccess") === "granted") {
+    await unlockApp();
+  } else {
+    accessScreen.hidden = false;
+  }
 }
+
+bootApp();
 
 accessForm.addEventListener("submit", async (event) => {
   event.preventDefault();
