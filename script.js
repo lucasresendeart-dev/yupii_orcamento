@@ -1010,7 +1010,7 @@ function prepareQuotePage() {
 }
 
 addQuoteItemButton.addEventListener("click", () => addQuoteItem());
-newQuoteActions.forEach((button) => button.addEventListener("click", showQuoteForm));
+newQuoteActions.forEach((button) => button.addEventListener("click", () => showQuoteForm()));
 quoteSearch.addEventListener("input", () => renderQuotes(quoteSearch.value));
 if (quoteStatusFilter) {
   quoteStatusFilter.addEventListener("change", () => renderQuotes(quoteSearch.value));
