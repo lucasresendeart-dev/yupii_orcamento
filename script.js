@@ -45,6 +45,11 @@ async function saveClient(client) {
   return saved;
 }
 
+async function removeClient(id) {
+  await apiDelete("clients", id);
+  clientsCache = clientsCache.filter((c) => String(c.id) !== String(id));
+}
+
 async function saveTheme(theme) {
   const saved = await apiSave("themes", theme);
   const i = themesCache.findIndex((t) => String(t.id) === String(saved.id));
@@ -87,6 +92,8 @@ const icons = {
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 13h4"/>',
 };
 
 const companyInfo = {
@@ -188,6 +195,7 @@ const quoteListView = document.querySelector("#quoteListView");
 const quoteFormView = document.querySelector("#quoteFormView");
 const newQuoteActions = document.querySelectorAll(".new-quote-action");
 const quoteSearch = document.querySelector("#quoteSearch");
+const quoteStatusFilter = document.querySelector("#quoteStatusFilter");
 const quotesList = document.querySelector("#quotesList");
 const emptyQuotes = document.querySelector("#emptyQuotes");
 const quoteCount = document.querySelector("#quoteCount");
@@ -215,6 +223,10 @@ const nextMonth = document.querySelector("#nextMonth");
 const confirmModal = document.querySelector("#confirmModal");
 const cancelConfirm = document.querySelector("#cancelConfirm");
 const approveConfirm = document.querySelector("#approveConfirm");
+const deleteClientModal = document.querySelector("#deleteClientModal");
+const cancelDeleteClient = document.querySelector("#cancelDeleteClient");
+const confirmDeleteClient = document.querySelector("#confirmDeleteClient");
+const deleteClientMessage = document.querySelector("#deleteClientMessage");
 const agendaDetailsModal = document.querySelector("#agendaDetailsModal");
 const agendaDetailsContent = document.querySelector("#agendaDetailsContent");
 const closeAgendaDetails = document.querySelector("#closeAgendaDetails");
@@ -222,6 +234,7 @@ let editingThemeId = null;
 let editingQuoteId = null;
 let visibleCalendarDate = new Date();
 let pendingSignalReversalId = null;
+let pendingDeleteClientId = null;
 
 function clientInitials(name) {
   return (name || "?").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
@@ -290,6 +303,11 @@ function renderClients(query = "") {
             <strong>${escapeHtml(address || "Não informado")}</strong>
           </div>
         ` : ""}
+        <div class="client-detail-actions">
+          <button class="secondary-button danger-text-button delete-client-button" type="button" data-delete-client="${client.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.trash}</svg> Excluir cliente
+          </button>
+        </div>
       </div>
     `;
   }).join("");
@@ -423,6 +441,16 @@ nextMonth.addEventListener("click", () => {
 });
 clientSearch.addEventListener("input", () => renderClients(clientSearch.value));
 clientsList.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-client]");
+  if (deleteButton) {
+    const id = deleteButton.dataset.deleteClient;
+    const client = getClients().find((item) => String(item.id) === String(id));
+    pendingDeleteClientId = id;
+    const name = client ? (client.tradeName || client.clientName || "este cliente") : "este cliente";
+    deleteClientMessage.textContent = `Tem certeza que deseja excluir ${name}? Esta ação não pode ser desfeita.`;
+    deleteClientModal.hidden = false;
+    return;
+  }
   const row = event.target.closest(".client-list-row");
   if (row) toggleClientDetails(row);
 });
@@ -511,15 +539,15 @@ function renderCalendar() {
   calendarMonth.textContent = visibleCalendarDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const first = new Date(year, month, 1);
   const start = new Date(year, month, 1 - first.getDay());
-  const approved = getQuotes().filter((quote) => quote.status === "approved" && quote.depositPaid && quote.eventDate);
+  const events = getQuotes().filter((quote) => quote.inAgenda && !quote.archived && quote.status !== "cancelled" && quote.eventDate);
   const today = new Date();
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   calendarGrid.innerHTML = Array.from({ length: 42 }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
     const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    const events = approved.filter((quote) => quote.eventDate === iso);
-    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}"><span class="calendar-day-number">${date.getDate()}</span>${events.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
+    const dayEvents = events.filter((quote) => quote.eventDate === iso);
+    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}"><span class="calendar-day-number">${date.getDate()}</span>${dayEvents.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
   }).join("");
 }
 
@@ -587,18 +615,53 @@ function formatEventDate(value) {
   return new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR");
 }
 
+function formatDateTime(value) {
+  if (!value) return "A combinar";
+  return new Date(value).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 function renderQuotes(query = "") {
   const allQuotes = getQuotes();
   const normalized = query.toLocaleLowerCase("pt-BR").trim();
+  const statusFilter = quoteStatusFilter ? quoteStatusFilter.value : "active";
+
   const quotes = allQuotes.map((quote, index) => ({ quote, index })).filter(({ quote, index }) => {
     const searchable = [quoteClientName(quote), quote.eventName, quoteNumber(quote, index)].join(" ").toLocaleLowerCase("pt-BR");
-    return !normalized || searchable.includes(normalized);
+    const matchesSearch = !normalized || searchable.includes(normalized);
+    if (!matchesSearch) return false;
+
+    switch (statusFilter) {
+      case "all":
+        return true;
+      case "scheduled":
+        return Boolean(quote.inAgenda) && !quote.archived && quote.status !== "cancelled";
+      case "archived":
+        return Boolean(quote.archived);
+      case "cancelled":
+        return quote.status === "cancelled";
+      case "active":
+      default:
+        return !quote.archived && quote.status !== "cancelled";
+    }
   });
 
   quoteCount.textContent = `${quotes.length} ${quotes.length === 1 ? "orçamento" : "orçamentos"}`;
   emptyQuotes.hidden = quotes.length > 0 || Boolean(query.trim());
   quotesList.innerHTML = quotes.map(({ quote, index }) => {
     const clientName = quoteClientName(quote);
+    const isApproved = quote.status === "approved" && quote.depositPaid;
+    const isCancelled = quote.status === "cancelled";
+    const isArchived = Boolean(quote.archived);
+    const inAgenda = Boolean(quote.inAgenda);
+
+    let extraTag = "";
+    if (isCancelled) extraTag = `<span class="status cancelled">Cancelado</span>`;
+    else if (isArchived) extraTag = `<span class="status archived">Arquivado</span>`;
+    else if (inAgenda) extraTag = `<span class="status scheduled">Na agenda</span>`;
+
     return `
       <article class="quote-management-row">
         <div class="quote-management-main">
@@ -617,9 +680,13 @@ function renderQuotes(query = "") {
           <strong>${formatEventDate(quote.eventDate)}</strong>
         </div>
         <strong class="quote-management-value">${currency(quote.total)}</strong>
-        <button class="status ${quote.status === "approved" && quote.depositPaid ? "approved" : "draft"} quote-status-action" type="button" data-confirm-quote="${quote.id}">${quote.status === "approved" && quote.depositPaid ? "Sinal recebido" : "Confirmar sinal"}</button>
-        <button class="quote-edit-action" type="button" data-quote-edit="${quote.id}" aria-label="Editar orçamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.edit}</svg></button>
-        <button class="quote-pdf-action" type="button" data-quote-pdf="${quote.id}" aria-label="Visualizar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.file}</svg></button>
+        <button class="status ${isApproved ? "approved" : "draft"} quote-status-action" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "Sinal recebido" : "Confirmar sinal"}">${isApproved ? "Sinal recebido" : "Confirmar sinal"}</button>
+        ${extraTag}
+        <button class="quote-edit-action" type="button" data-quote-edit="${quote.id}" aria-label="Editar orçamento" title="Editar orçamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.edit}</svg></button>
+        <button class="quote-pdf-action" type="button" data-quote-pdf="${quote.id}" aria-label="Visualizar PDF" title="Visualizar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.file}</svg></button>
+        <button class="quote-agenda-action${inAgenda ? " in-agenda" : ""}" type="button" data-quote-agenda="${quote.id}" aria-label="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}" title="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.calendar}</svg></button>
+        <button class="quote-cancel-action" type="button" data-quote-cancel="${quote.id}" aria-label="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}" title="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${isCancelled ? icons.check : icons.x}</svg></button>
+        <button class="quote-archive-action" type="button" data-quote-archive="${quote.id}" aria-label="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}" title="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.archive}</svg></button>
       </article>
     `;
   }).join("");
@@ -659,7 +726,7 @@ function showQuoteForm(quoteId = null) {
     if (quote) {
       prepareQuotePage();
       // fill header fields
-      const fields = ["quoteClient", "eventName", "eventDate", "eventTime", "eventLocation", "quoteValidity", "paymentMethod", "quoteNotes"];
+      const fields = ["quoteClient", "eventName", "eventDate", "eventTime", "setupDateTime", "pickupDateTime", "eventLocation", "quoteValidity", "paymentMethod", "quoteNotes"];
       fields.forEach((name) => {
         const el = quoteForm.elements[name];
         if (el && quote[name] !== undefined) el.value = quote[name];
@@ -727,6 +794,17 @@ function renderQuotePdf(quote) {
       <div class="pdf-meta-item"><span>Data e horário do evento</span><strong>${formatEventDate(quote.eventDate)}${quote.eventTime ? ` às ${escapeHtml(quote.eventTime)}` : ""}</strong></div>
       <div class="pdf-meta-item"><span>Local do evento</span><strong>${escapeHtml(quote.eventLocation || clientAddress || "Não informado")}</strong></div>
       <div class="pdf-meta-item"><span>Tema</span><strong>${escapeHtml(quote.eventTheme || "Não informado")}</strong></div>
+    </section>
+
+    <section class="pdf-section">
+      <h3 class="pdf-section-title">Informações do evento</h3>
+      <div class="pdf-meta-grid">
+        <div class="pdf-meta-item"><span>Data do evento</span><strong>${formatEventDate(quote.eventDate)}</strong></div>
+        <div class="pdf-meta-item"><span>Horário</span><strong>${escapeHtml(quote.eventTime || "A combinar")}</strong></div>
+        <div class="pdf-meta-item"><span>Montagem</span><strong>${formatDateTime(quote.setupDateTime)}</strong></div>
+        <div class="pdf-meta-item"><span>Desmontagem</span><strong>${formatDateTime(quote.pickupDateTime)}</strong></div>
+        <div class="pdf-meta-item"><span>Local</span><strong>${escapeHtml(quote.eventLocation || "Não informado")}</strong></div>
+      </div>
     </section>
 
     <section class="pdf-section">
@@ -934,6 +1012,9 @@ function prepareQuotePage() {
 addQuoteItemButton.addEventListener("click", () => addQuoteItem());
 newQuoteActions.forEach((button) => button.addEventListener("click", showQuoteForm));
 quoteSearch.addEventListener("input", () => renderQuotes(quoteSearch.value));
+if (quoteStatusFilter) {
+  quoteStatusFilter.addEventListener("change", () => renderQuotes(quoteSearch.value));
+}
 quotesList.addEventListener("click", async (event) => {
   const confirmButton = event.target.closest("[data-confirm-quote]");
   if (confirmButton) {
@@ -961,7 +1042,79 @@ quotesList.addEventListener("click", async (event) => {
     return;
   }
   const button = event.target.closest("[data-quote-pdf]");
-  if (button) showQuotePdf(button.dataset.quotePdf);
+  if (button) {
+    showQuotePdf(button.dataset.quotePdf);
+    return;
+  }
+
+  const agendaButton = event.target.closest("[data-quote-agenda]");
+  if (agendaButton) {
+    const quotes = getQuotes();
+    const quote = quotes.find((item) => String(item.id) === String(agendaButton.dataset.quoteAgenda));
+    if (quote) {
+      if (quote.inAgenda) {
+        quote.inAgenda = false;
+        if (quote.status === "scheduled") quote.status = "draft";
+        toast.textContent = "Evento removido da agenda.";
+      } else {
+        quote.inAgenda = true;
+        quote.status = "scheduled";
+        toast.textContent = "Evento adicionado à agenda.";
+      }
+      await saveQuote(quote);
+      renderQuotes(quoteSearch.value);
+      renderCalendar();
+      toast.classList.add("visible");
+      window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    }
+    return;
+  }
+
+  const cancelButton = event.target.closest("[data-quote-cancel]");
+  if (cancelButton) {
+    const quotes = getQuotes();
+    const quote = quotes.find((item) => String(item.id) === String(cancelButton.dataset.quoteCancel));
+    if (quote) {
+      if (quote.status === "cancelled") {
+        quote.status = "draft";
+        delete quote.cancelledAt;
+        toast.textContent = "Orçamento reativado.";
+      } else {
+        quote.status = "cancelled";
+        quote.cancelledAt = new Date().toISOString();
+        quote.inAgenda = false;
+        toast.textContent = "Orçamento cancelado.";
+      }
+      await saveQuote(quote);
+      renderQuotes(quoteSearch.value);
+      renderCalendar();
+      toast.classList.add("visible");
+      window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    }
+    return;
+  }
+
+  const archiveButton = event.target.closest("[data-quote-archive]");
+  if (archiveButton) {
+    const quotes = getQuotes();
+    const quote = quotes.find((item) => String(item.id) === String(archiveButton.dataset.quoteArchive));
+    if (quote) {
+      if (quote.archived) {
+        quote.archived = false;
+        delete quote.archivedAt;
+        toast.textContent = "Orçamento desarquivado.";
+      } else {
+        quote.archived = true;
+        quote.archivedAt = new Date().toISOString();
+        toast.textContent = "Orçamento arquivado.";
+      }
+      await saveQuote(quote);
+      renderQuotes(quoteSearch.value);
+      toast.classList.add("visible");
+      window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    }
+    return;
+  }
 });
 
 // ─── Home page dynamic render ───────────────────────────────────────────────
@@ -1013,7 +1166,7 @@ function renderHome() {
   // ── Próximos eventos: aprovados com data >= hoje ─────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
   const upcoming = allQuotes
-    .filter((q) => q.status === "approved" && q.depositPaid && q.eventDate)
+    .filter((q) => q.inAgenda && !q.archived && q.status !== "cancelled" && q.eventDate)
     .map((q) => ({ q, d: new Date(`${q.eventDate}T12:00:00`) }))
     .filter(({ d }) => d >= today)
     .sort((a, b) => a.d - b.d)
@@ -1065,6 +1218,32 @@ approveConfirm.addEventListener("click", async () => {
 });
 confirmModal.addEventListener("click", (event) => {
   if (event.target === confirmModal) closeSignalReversal();
+});
+
+function closeDeleteClientModal() {
+  pendingDeleteClientId = null;
+  deleteClientModal.hidden = true;
+}
+
+cancelDeleteClient.addEventListener("click", closeDeleteClientModal);
+deleteClientModal.addEventListener("click", (event) => {
+  if (event.target === deleteClientModal) closeDeleteClientModal();
+});
+confirmDeleteClient.addEventListener("click", async () => {
+  if (!pendingDeleteClientId) return;
+  try {
+    await removeClient(pendingDeleteClientId);
+    renderClients(clientSearch.value);
+    toast.textContent = "Cliente excluído com sucesso.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  } catch (error) {
+    console.error(error);
+    toast.textContent = "Não foi possível excluir o cliente.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  }
+  closeDeleteClientModal();
 });
 calendarGrid.addEventListener("click", (event) => {
   const eventButton = event.target.closest("[data-agenda-quote]");

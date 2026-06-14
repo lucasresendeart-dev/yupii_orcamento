@@ -287,6 +287,13 @@
                   <span data-icon="search"></span>
                   <input id="quoteSearch" type="search" placeholder="Buscar por cliente, festa ou número" />
                 </label>
+                <select id="quoteStatusFilter" class="status-filter-select">
+                  <option value="active">Ativos</option>
+                  <option value="scheduled">Na agenda</option>
+                  <option value="archived">Arquivados</option>
+                  <option value="cancelled">Cancelados</option>
+                  <option value="all">Todos</option>
+                </select>
                 <span class="client-count" id="quoteCount">0 orçamentos</span>
               </div>
               <div class="quotes-management-list" id="quotesList"></div>
@@ -334,6 +341,14 @@
                   <label class="field">
                     <span>Horário</span>
                     <input name="eventTime" type="time" />
+                  </label>
+                  <label class="field">
+                    <span>Montagem</span>
+                    <input name="setupDateTime" type="datetime-local" />
+                  </label>
+                  <label class="field">
+                    <span>Desmontagem</span>
+                    <input name="pickupDateTime" type="datetime-local" />
                   </label>
                   <label class="field quote-location">
                     <span>Local da festa</span>
@@ -507,6 +522,18 @@
         <div class="modal-actions">
           <button class="secondary-button" id="cancelConfirm" type="button">Manter confirmação</button>
           <button class="danger-button" id="approveConfirm" type="button">Sim, reverter</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="deleteClientModal" hidden>
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="deleteClientTitle">
+        <span class="modal-icon"><span data-icon="trash"></span></span>
+        <h2 id="deleteClientTitle">Excluir cliente?</h2>
+        <p id="deleteClientMessage">Esta ação não pode ser desfeita.</p>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelDeleteClient" type="button">Cancelar</button>
+          <button class="danger-button" id="confirmDeleteClient" type="button">Sim, excluir</button>
         </div>
       </section>
     </div>
