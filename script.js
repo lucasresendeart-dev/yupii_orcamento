@@ -1037,10 +1037,6 @@ function prepareQuotePage() {
     return `<option value="${client.id}">${escapeHtml(name)} · ${escapeHtml(client.document || "")}</option>`;
   }).join("");
   quoteClient.value = selected;
-  if (!quoteItems.children.length) {
-    addQuoteItem({ description: "Locação de peças decorativas", type: "Locação", quantity: 1 });
-    addQuoteItem({ description: "Montagem e desmontagem", type: "Serviço", quantity: 1 });
-  }
 }
 
 addQuoteItemButton.addEventListener("click", () => addQuoteItem());
