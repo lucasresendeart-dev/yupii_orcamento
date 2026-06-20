@@ -1612,7 +1612,7 @@ button {
   display: block;
   width: min(240px, 88%);
   max-height: 58px;
-  margin: -58px auto 4px;
+  margin: -44px auto 1px;
   object-fit: contain;
 }
 

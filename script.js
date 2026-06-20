@@ -606,9 +606,9 @@ function showAgendaQuoteDetails(quoteId) {
       <span>${escapeHtml(clientName)}</span>
     </div>
     <div class="agenda-detail-grid">
-      <div><span>Montagem</span><strong>${formatDateTime(quote.setupDateTime)}</strong></div>
+      <div><span>Montagem</span><strong>${formatScheduleDateTime(quote.setupDate, quote.setupTime, quote.setupDateTime)}</strong></div>
       <div><span>Data e horário do evento</span><strong>${formatEventDate(quote.eventDate)}${quote.eventTime ? ` às ${quote.eventTime}` : ""}</strong></div>
-      <div><span>Desmontagem</span><strong>${formatDateTime(quote.pickupDateTime)}</strong></div>
+      <div><span>Desmontagem</span><strong>${formatScheduleDateTime(quote.pickupDate, quote.pickupTime, quote.pickupDateTime)}</strong></div>
       <div><span>Local</span><strong>${escapeHtml(quote.eventLocation || "Não informado")}</strong></div>
       <div><span>Tema</span><strong>${escapeHtml(quote.eventTheme || "Não informado")}</strong></div>
       <div><span>Telefone / WhatsApp</span><strong>${escapeHtml(client.phone || "Não informado")}</strong></div>
@@ -664,6 +664,25 @@ function formatDateTime(value) {
     dateStyle: "short",
     timeStyle: "short",
   });
+}
+
+function splitDateTime(value) {
+  if (!value) return { date: "", time: "" };
+  const [date = "", time = ""] = String(value).split("T");
+  return { date, time: time.slice(0, 5) };
+}
+
+function combineDateTime(date, time) {
+  if (!date) return "";
+  return `${date}T${time || "00:00"}`;
+}
+
+function formatScheduleDateTime(date, time, legacyDateTime) {
+  if (date) {
+    const formattedDate = formatEventDate(date);
+    return time ? `${formattedDate} às ${time}` : formattedDate;
+  }
+  return formatDateTime(legacyDateTime);
 }
 
 function renderQuotes(query = "") {
@@ -775,11 +794,21 @@ function showQuoteForm(quoteId = null) {
     if (quote) {
       prepareQuotePage();
       // fill header fields
-      const fields = ["quoteClient", "eventName", "eventDate", "eventTime", "setupDateTime", "pickupDateTime", "eventLocation", "quoteValidity", "paymentMethod", "quoteNotes"];
+      const fields = ["quoteClient", "eventName", "eventDate", "eventTime", "setupDate", "setupTime", "pickupDate", "pickupTime", "eventLocation", "eventTheme", "validity", "paymentMethod", "notes"];
       fields.forEach((name) => {
         const el = quoteForm.elements[name];
         if (el && quote[name] !== undefined) el.value = quote[name];
       });
+      if (!quote.setupDate && quote.setupDateTime) {
+        const setup = splitDateTime(quote.setupDateTime);
+        if (quoteForm.elements.setupDate) quoteForm.elements.setupDate.value = setup.date;
+        if (quoteForm.elements.setupTime) quoteForm.elements.setupTime.value = setup.time;
+      }
+      if (!quote.pickupDate && quote.pickupDateTime) {
+        const pickup = splitDateTime(quote.pickupDateTime);
+        if (quoteForm.elements.pickupDate) quoteForm.elements.pickupDate.value = pickup.date;
+        if (quoteForm.elements.pickupTime) quoteForm.elements.pickupTime.value = pickup.time;
+      }
       quoteDiscount.value = quote.discount ? String(quote.discount).replace(".", ",") : "0,00";
       quoteDelivery.value = quote.delivery ? String(quote.delivery).replace(".", ",") : "0,00";
       quoteDepositPercent.value = quote.depositPercent || 50;
@@ -850,8 +879,8 @@ function renderQuotePdf(quote) {
       <div class="pdf-meta-grid">
         <div class="pdf-meta-item"><span>Data do evento</span><strong>${formatEventDate(quote.eventDate)}</strong></div>
         <div class="pdf-meta-item"><span>Horário</span><strong>${escapeHtml(quote.eventTime || "A combinar")}</strong></div>
-        <div class="pdf-meta-item"><span>Montagem</span><strong>${formatDateTime(quote.setupDateTime)}</strong></div>
-        <div class="pdf-meta-item"><span>Desmontagem</span><strong>${formatDateTime(quote.pickupDateTime)}</strong></div>
+        <div class="pdf-meta-item"><span>Montagem</span><strong>${formatScheduleDateTime(quote.setupDate, quote.setupTime, quote.setupDateTime)}</strong></div>
+        <div class="pdf-meta-item"><span>Desmontagem</span><strong>${formatScheduleDateTime(quote.pickupDate, quote.pickupTime, quote.pickupDateTime)}</strong></div>
         <div class="pdf-meta-item"><span>Local</span><strong>${escapeHtml(quote.eventLocation || "Não informado")}</strong></div>
       </div>
     </section>
@@ -1445,6 +1474,8 @@ quoteForm.addEventListener("submit", async (event) => {
   data.delivery = parseMoney(quoteDelivery.value);
   data.depositPercent = Number(quoteDepositPercent.value) || 0;
   data.total = parseMoney(quoteTotal.textContent);
+  data.setupDateTime = combineDateTime(data.setupDate, data.setupTime);
+  data.pickupDateTime = combineDateTime(data.pickupDate, data.pickupTime);
 
   if (editingQuoteId) {
     const index = quotes.findIndex((q) => String(q.id) === String(editingQuoteId));
