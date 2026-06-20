@@ -439,17 +439,23 @@ themesList.addEventListener("click", (event) => {
   }
 });
 addThemeItemButton.addEventListener("click", () => addThemeItem());
+themeItems.addEventListener("input", updateThemePackageTotal);
 themeItems.addEventListener("click", (event) => {
   const button = event.target.closest(".remove-theme-item");
-  if (button) button.closest(".theme-item-row").remove();
+  if (button) {
+    button.closest(".theme-item-row").remove();
+    updateThemePackageTotal();
+  }
 });
+document.querySelector("#packageDiscount").addEventListener("input", updateThemePackageTotal);
 themeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  updateThemePackageTotal();
   const theme = {
     id: editingThemeId || createId(),
     themeName: document.querySelector("#themeName").value,
     packageName: document.querySelector("#packageName").value,
-    themeCategory: document.querySelector("#themeCategory").value,
+    packageDiscount: parseMoney(document.querySelector("#packageDiscount").value),
     packagePrice: parseMoney(document.querySelector("#packagePrice").value),
     themeDescription: document.querySelector("#themeDescription").value,
     items: [...themeItems.querySelectorAll(".theme-item-row")].map((row) => ({
@@ -507,13 +513,13 @@ function getThemes() {
 
 function renderThemes(query = "") {
   const normalized = query.toLocaleLowerCase("pt-BR").trim();
-  const themes = getThemes().filter((theme) => !normalized || [theme.themeName, theme.packageName, theme.themeCategory].join(" ").toLocaleLowerCase("pt-BR").includes(normalized));
+  const themes = getThemes().filter((theme) => !normalized || [theme.themeName, theme.packageName].join(" ").toLocaleLowerCase("pt-BR").includes(normalized));
   themeCount.textContent = `${themes.length} ${themes.length === 1 ? "pacote" : "pacotes"}`;
   emptyThemes.hidden = themes.length > 0 || Boolean(query.trim());
   themesList.innerHTML = themes.map((theme) => `
     <article class="theme-row" data-theme-id="${theme.id}" tabindex="0">
       <div class="theme-main"><strong>${escapeHtml(theme.themeName)}</strong><span>${escapeHtml(theme.packageName)}</span></div>
-      <div class="theme-detail"><span>Categoria</span><strong>${escapeHtml(theme.themeCategory || "Não informada")}</strong></div>
+      <div class="theme-detail"><span>Desconto</span><strong>${currency(theme.packageDiscount || 0)}</strong></div>
       <div class="theme-detail"><span>Itens inclusos</span><strong>${theme.items.length} itens</strong></div>
       <strong class="theme-price">${currency(theme.packagePrice)}</strong>
       <span class="client-expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.down}</svg></span>
@@ -544,6 +550,7 @@ function addThemeItem(data = {}) {
   `;
   if (data.type) row.querySelector(".theme-item-type").value = data.type;
   themeItems.appendChild(row);
+  updateThemePackageTotal();
 }
 
 function showThemeForm(themeId = null) {
@@ -558,13 +565,17 @@ function showThemeForm(themeId = null) {
     if (theme) {
       document.querySelector("#themeName").value = theme.themeName;
       document.querySelector("#packageName").value = theme.packageName;
-      document.querySelector("#themeCategory").value = theme.themeCategory || "";
-      document.querySelector("#packagePrice").value = String(theme.packagePrice).replace(".", ",");
       document.querySelector("#themeDescription").value = theme.themeDescription || "";
       theme.items.forEach(addThemeItem);
+      const itemsSum = themeItemsTotal();
+      const legacyDiscount = Math.max(0, itemsSum - Number(theme.packagePrice || 0));
+      document.querySelector("#packageDiscount").value = String(theme.packageDiscount ?? legacyDiscount).replace(".", ",");
+      updateThemePackageTotal();
     }
   } else {
     addThemeItem();
+    document.querySelector("#packageDiscount").value = "0,00";
+    updateThemePackageTotal();
   }
 }
 
@@ -583,7 +594,7 @@ function renderCalendar() {
     const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const dayEvents = events.filter((quote) => quote.eventDate === iso);
     const dayLabel = date.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).replace(".", "");
-    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}${dayEvents.length ? " has-event" : ""}"><div class="calendar-day-heading"><span class="calendar-day-number">${date.getDate()}</span><span class="calendar-day-label">${dayLabel}</span></div>${dayEvents.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
+    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}${dayEvents.length ? " has-event" : ""}" data-agenda-date="${iso}" data-event-count="${dayEvents.length}" role="button" tabindex="0"><div class="calendar-day-heading"><span class="calendar-day-number">${date.getDate()}</span><span class="calendar-day-label">${dayLabel}</span></div>${dayEvents.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
   }).join("");
 }
 
@@ -627,6 +638,36 @@ function showAgendaQuoteDetails(quoteId) {
       <div class="agenda-detail-note">${escapeHtml(quote.notes)}</div>
     </div>
     ` : ""}
+  `;
+  agendaDetailsModal.hidden = false;
+}
+
+function showAgendaDateDetails(dateIso) {
+  const dayEvents = getQuotes()
+    .filter((quote) => isDashboardQuote(quote) && quote.inAgenda && quote.eventDate === dateIso)
+    .sort((a, b) => String(a.eventTime || "").localeCompare(String(b.eventTime || "")));
+
+  if (dayEvents.length === 1) {
+    showAgendaQuoteDetails(dayEvents[0].id);
+    return;
+  }
+
+  const dateLabel = formatEventDate(dateIso);
+  agendaDetailsContent.innerHTML = `
+    <div class="agenda-detail-header">
+      <span class="eyebrow">Eventos da data</span>
+      <h2 id="agendaDetailsTitle">${dateLabel}</h2>
+      <span>${dayEvents.length ? `${dayEvents.length} eventos confirmados` : "Nenhum evento confirmado"}</span>
+    </div>
+    <div class="agenda-date-list">
+      ${dayEvents.length ? dayEvents.map((quote) => `
+        <button class="agenda-date-event" type="button" data-agenda-quote="${quote.id}">
+          <strong>${escapeHtml(quote.eventName || "Festa")}</strong>
+          <span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span>
+          <small>Montagem: ${formatScheduleDateTime(quote.setupDate, quote.setupTime, quote.setupDateTime)}</small>
+        </button>
+      `).join("") : '<div class="agenda-detail-note">Nao ha eventos nessa data.</div>'}
+    </div>
   `;
   agendaDetailsModal.hidden = false;
 }
@@ -948,6 +989,19 @@ function parseMoney(value) {
   return Number(normalized) || 0;
 }
 
+function themeItemsTotal() {
+  return [...themeItems.querySelectorAll(".theme-item-row")].reduce((total, row) => {
+    const quantity = Number(row.querySelector(".theme-item-quantity").value) || 0;
+    const price = parseMoney(row.querySelector(".theme-item-price").value);
+    return total + quantity * price;
+  }, 0);
+}
+
+function updateThemePackageTotal() {
+  const packagePrice = Math.max(0, themeItemsTotal() - parseMoney(document.querySelector("#packageDiscount").value));
+  document.querySelector("#packagePrice").value = currency(packagePrice).replace("R$", "").trim();
+}
+
 function addQuoteItem(data = {}, container = quoteItems) {
   const row = document.createElement("div");
   row.className = "quote-item-row";
@@ -993,7 +1047,7 @@ function renderPackagePicker() {
         <div class="package-picker-row" data-package-toggle="${theme.id}">
           <div class="package-picker-main">
             <strong>${escapeHtml(theme.themeName)}</strong>
-            <span>${escapeHtml(theme.packageName)}${theme.themeCategory ? ` · ${escapeHtml(theme.themeCategory)}` : ""}</span>
+            <span>${escapeHtml(theme.packageName)}</span>
           </div>
           <div class="package-picker-count">${(theme.items || []).length} ${(theme.items || []).length === 1 ? "item incluso" : "itens inclusos"}</div>
           <strong class="package-picker-price">${currency(theme.packagePrice)}</strong>
@@ -1389,11 +1443,25 @@ confirmDeleteClient.addEventListener("click", async () => {
 });
 calendarGrid.addEventListener("click", (event) => {
   const eventButton = event.target.closest("[data-agenda-quote]");
-  if (eventButton) showAgendaQuoteDetails(eventButton.dataset.agendaQuote);
+  if (eventButton) {
+    showAgendaQuoteDetails(eventButton.dataset.agendaQuote);
+    return;
+  }
+  const day = event.target.closest("[data-agenda-date]");
+  if (day) showAgendaDateDetails(day.dataset.agendaDate);
+});
+calendarGrid.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const day = event.target.closest("[data-agenda-date]");
+  if (!day) return;
+  event.preventDefault();
+  showAgendaDateDetails(day.dataset.agendaDate);
 });
 closeAgendaDetails.addEventListener("click", () => agendaDetailsModal.hidden = true);
 agendaDetailsModal.addEventListener("click", (event) => {
   if (event.target === agendaDetailsModal) agendaDetailsModal.hidden = true;
+  const eventButton = event.target.closest("[data-agenda-quote]");
+  if (eventButton) showAgendaQuoteDetails(eventButton.dataset.agendaQuote);
 });
 backFromPdf.addEventListener("click", showQuoteList);
 

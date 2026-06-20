@@ -819,6 +819,13 @@ button {
   box-shadow: 0 0 0 3px var(--pink-100);
 }
 
+.field input[readonly] {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: var(--green-soft);
+  font-weight: 700;
+}
+
 .client-combobox {
   position: relative;
   min-width: 0;
@@ -2190,6 +2197,35 @@ button {
   white-space: pre-wrap;
 }
 
+.agenda-date-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.agenda-date-event {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  color: var(--ink);
+  background: var(--pink-50);
+  border: 1px solid var(--pink-100);
+  border-left: 4px solid var(--pink-500);
+  border-radius: 10px;
+  text-align: left;
+}
+
+.agenda-date-event strong {
+  font-size: 13px;
+}
+
+.agenda-date-event span,
+.agenda-date-event small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
 .eyebrow {
   display: block;
   margin-bottom: 6px;
@@ -2804,6 +2840,7 @@ h1 {
   .calendar-day.has-event {
     gap: 8px;
     background: var(--white);
+    cursor: pointer;
   }
 
   .calendar-day.today {
@@ -2827,6 +2864,7 @@ h1 {
   .calendar-event {
     margin-top: 0;
     padding: 10px;
+    pointer-events: none;
   }
 
   .calendar-event strong {
