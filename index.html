@@ -448,6 +448,7 @@
           <div id="quotePdfView" hidden>
             <div class="pdf-toolbar">
               <button class="text-button" id="backFromPdf" type="button"><span data-icon="arrow-left"></span> Voltar aos orçamentos</button>
+              <button class="secondary-button" id="addSignaturePdf" type="button"><span data-icon="edit"></span> Adicionar assinatura</button>
               <button class="primary-button" id="shareQuotePdf" type="button"><span data-icon="share"></span> Compartilhar / Salvar PDF</button>
             </div>
             <article class="pdf-document" id="pdfDocument"></article>
@@ -522,10 +523,10 @@
     <div class="modal-backdrop" id="confirmModal" hidden>
       <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
         <span class="modal-icon"><span data-icon="calendar"></span></span>
-        <h2 id="confirmTitle">Reverter confirmação do sinal?</h2>
+        <h2 id="confirmTitle">Reverter aprovação do orçamento?</h2>
         <p>O evento deixará de aparecer na agenda de festas confirmadas.</p>
         <div class="modal-actions">
-          <button class="secondary-button" id="cancelConfirm" type="button">Manter confirmação</button>
+          <button class="secondary-button" id="cancelConfirm" type="button">Manter aprovação</button>
           <button class="danger-button" id="approveConfirm" type="button">Sim, reverter</button>
         </div>
       </section>
@@ -539,6 +540,30 @@
         <div class="modal-actions">
           <button class="secondary-button" id="cancelDeleteClient" type="button">Cancelar</button>
           <button class="danger-button" id="confirmDeleteClient" type="button">Sim, excluir</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="quoteActionModal" hidden>
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="quoteActionTitle">
+        <span class="modal-icon"><span data-icon="archive"></span></span>
+        <h2 id="quoteActionTitle">Confirmar ação?</h2>
+        <p id="quoteActionMessage">Essa ação pode remover o orçamento da lista ativa.</p>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelQuoteAction" type="button">Voltar</button>
+          <button class="danger-button" id="confirmQuoteAction" type="button">Confirmar</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="pdfChoiceModal" hidden>
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="pdfChoiceTitle">
+        <span class="modal-icon"><span data-icon="share"></span></span>
+        <h2 id="pdfChoiceTitle">O que deseja fazer?</h2>
+        <p>Escolha se quer compartilhar o orçamento agora ou baixar o PDF no aparelho.</p>
+        <div class="modal-actions">
+          <button class="secondary-button" id="downloadQuotePdf" type="button">Baixar PDF</button>
+          <button class="primary-button" id="confirmShareQuotePdf" type="button">Compartilhar</button>
         </div>
       </section>
     </div>

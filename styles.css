@@ -926,7 +926,6 @@ button {
 
 .quote-pdf-action,
 .quote-edit-action,
-.quote-agenda-action,
 .quote-cancel-action,
 .quote-archive-action {
   display: grid;
@@ -944,7 +943,6 @@ button {
 
 .quote-pdf-action svg,
 .quote-edit-action svg,
-.quote-agenda-action svg,
 .quote-cancel-action svg,
 .quote-archive-action svg {
   display: block;
@@ -954,16 +952,9 @@ button {
 
 .quote-pdf-action:hover,
 .quote-edit-action:hover,
-.quote-agenda-action:hover,
 .quote-cancel-action:hover,
 .quote-archive-action:hover {
   background: var(--pink-100);
-}
-
-.quote-agenda-action.in-agenda {
-  color: var(--green);
-  background: var(--green-soft);
-  border-color: var(--green-soft);
 }
 
 .quote-cancel-action {
@@ -1611,9 +1602,18 @@ button {
 }
 
 .pdf-signature {
+  position: relative;
   padding-top: 7px;
   border-top: 1px solid #b9adb1;
   text-align: center;
+}
+
+.pdf-signature-image {
+  display: block;
+  width: min(240px, 88%);
+  max-height: 58px;
+  margin: -58px auto 4px;
+  object-fit: contain;
 }
 
 .pdf-signature strong {
@@ -2601,7 +2601,6 @@ h1 {
 
   .quote-pdf-action,
   .quote-edit-action,
-  .quote-agenda-action,
   .quote-cancel-action,
   .quote-archive-action {
     flex-basis: 36px;

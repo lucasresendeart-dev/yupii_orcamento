@@ -160,11 +160,15 @@ accessForm.addEventListener("submit", async (event) => {
   accessPassword.select();
 });
 
-document.querySelectorAll("[data-icon]").forEach((element) => {
-  const icon = icons[element.dataset.icon];
-  if (!icon) return;
-  element.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
-});
+function addIcons(root = document) {
+  root.querySelectorAll("[data-icon]").forEach((element) => {
+    const icon = icons[element.dataset.icon];
+    if (!icon) return;
+    element.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
+  });
+}
+
+addIcons();
 
 const sidebar = document.querySelector("#sidebar");
 const menuButton = document.querySelector("#menuButton");
@@ -221,6 +225,7 @@ const quoteCount = document.querySelector("#quoteCount");
 const quotePdfView = document.querySelector("#quotePdfView");
 const pdfDocument = document.querySelector("#pdfDocument");
 const backFromPdf = document.querySelector("#backFromPdf");
+const addSignaturePdf = document.querySelector("#addSignaturePdf");
 const shareQuotePdf = document.querySelector("#shareQuotePdf");
 let activePdfQuote = null;
 const catalogListView = document.querySelector("#catalogListView");
@@ -246,6 +251,14 @@ const deleteClientModal = document.querySelector("#deleteClientModal");
 const cancelDeleteClient = document.querySelector("#cancelDeleteClient");
 const confirmDeleteClient = document.querySelector("#confirmDeleteClient");
 const deleteClientMessage = document.querySelector("#deleteClientMessage");
+const quoteActionModal = document.querySelector("#quoteActionModal");
+const quoteActionTitle = document.querySelector("#quoteActionTitle");
+const quoteActionMessage = document.querySelector("#quoteActionMessage");
+const cancelQuoteAction = document.querySelector("#cancelQuoteAction");
+const confirmQuoteAction = document.querySelector("#confirmQuoteAction");
+const pdfChoiceModal = document.querySelector("#pdfChoiceModal");
+const downloadQuotePdf = document.querySelector("#downloadQuotePdf");
+const confirmShareQuotePdf = document.querySelector("#confirmShareQuotePdf");
 const agendaDetailsModal = document.querySelector("#agendaDetailsModal");
 const agendaDetailsContent = document.querySelector("#agendaDetailsContent");
 const closeAgendaDetails = document.querySelector("#closeAgendaDetails");
@@ -254,6 +267,7 @@ let editingQuoteId = null;
 let visibleCalendarDate = new Date();
 let pendingSignalReversalId = null;
 let pendingDeleteClientId = null;
+let pendingQuoteAction = null;
 
 function clientInitials(name) {
   return (name || "?").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
@@ -429,7 +443,6 @@ themeItems.addEventListener("click", (event) => {
 });
 themeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const themes = getThemes();
   const theme = {
     id: editingThemeId || createId(),
     themeName: document.querySelector("#themeName").value,
@@ -445,6 +458,7 @@ themeForm.addEventListener("submit", async (event) => {
     })),
   };
   await saveTheme(theme);
+  editingThemeId = null;
   toast.textContent = "Tema salvo com sucesso.";
   toast.classList.add("visible");
   window.setTimeout(() => toast.classList.remove("visible"), 2800);
@@ -592,7 +606,9 @@ function showAgendaQuoteDetails(quoteId) {
       <span>${escapeHtml(clientName)}</span>
     </div>
     <div class="agenda-detail-grid">
-      <div><span>Data e horário</span><strong>${formatEventDate(quote.eventDate)}${quote.eventTime ? ` às ${quote.eventTime}` : ""}</strong></div>
+      <div><span>Montagem</span><strong>${formatDateTime(quote.setupDateTime)}</strong></div>
+      <div><span>Data e horário do evento</span><strong>${formatEventDate(quote.eventDate)}${quote.eventTime ? ` às ${quote.eventTime}` : ""}</strong></div>
+      <div><span>Desmontagem</span><strong>${formatDateTime(quote.pickupDateTime)}</strong></div>
       <div><span>Local</span><strong>${escapeHtml(quote.eventLocation || "Não informado")}</strong></div>
       <div><span>Tema</span><strong>${escapeHtml(quote.eventTheme || "Não informado")}</strong></div>
       <div><span>Telefone / WhatsApp</span><strong>${escapeHtml(client.phone || "Não informado")}</strong></div>
@@ -708,16 +724,15 @@ function renderQuotes(query = "") {
         </div>
         <strong class="quote-management-value">${currency(quote.total)}</strong>
         <div class="quote-management-states">
-          <button class="quote-status-action ${isApproved ? "is-received" : "is-pending"}" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "Sinal recebido" : "Confirmar sinal"}">
+          <button class="quote-status-action ${isApproved ? "is-received" : "is-pending"}" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "OrÃ§amento aprovado" : "Aprovar orÃ§amento"}">
             <span class="quote-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${isApproved ? icons.check : icons.clock}</svg></span>
-            <span>${isApproved ? "Sinal recebido" : "Confirmar sinal"}</span>
+            <span>${isApproved ? "Aprovado" : "Aprovar orÃ§amento"}</span>
           </button>
           ${extraTag}
         </div>
         <div class="quote-management-actions">
           <button class="quote-edit-action" type="button" data-quote-edit="${quote.id}" aria-label="Editar orçamento" title="Editar orçamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.edit}</svg></button>
           <button class="quote-pdf-action" type="button" data-quote-pdf="${quote.id}" aria-label="Visualizar PDF" title="Visualizar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.file}</svg></button>
-          <button class="quote-agenda-action${inAgenda ? " in-agenda" : ""}" type="button" data-quote-agenda="${quote.id}" aria-label="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}" title="${inAgenda ? "Remover da agenda" : "Adicionar à agenda"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.calendar}</svg></button>
           <button class="quote-cancel-action" type="button" data-quote-cancel="${quote.id}" aria-label="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}" title="${isCancelled ? "Reativar orçamento" : "Cancelar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${isCancelled ? icons.check : icons.x}</svg></button>
           <button class="quote-archive-action" type="button" data-quote-archive="${quote.id}" aria-label="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}" title="${isArchived ? "Desarquivar orçamento" : "Arquivar orçamento"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.archive}</svg></button>
         </div>
@@ -874,7 +889,7 @@ function renderQuotePdf(quote) {
     </section>
 
     <footer class="pdf-footer">
-      <div class="pdf-signature"><strong>${companyInfo.owner}</strong><span>Yupii Personalizados e Festas</span></div>
+      <div class="pdf-signature">${quote.priscilaSignature ? '<img class="pdf-signature-image" src="assets/priscila-signature.png" alt="Assinatura de Priscila Carvalho Ribeiro" />' : ""}<strong>${companyInfo.owner}</strong><span>Yupii Personalizados e Festas</span></div>
       <div class="pdf-signature"><strong>${escapeHtml(clientName)}</strong><span>Aceite do cliente</span></div>
     </footer>
   `;
@@ -888,6 +903,10 @@ function showQuotePdf(quoteId) {
   quoteFormView.hidden = true;
   quotePdfView.hidden = false;
   renderQuotePdf(quote);
+  addSignaturePdf.innerHTML = quote.priscilaSignature
+    ? '<span data-icon="x"></span> Remover assinatura'
+    : '<span data-icon="edit"></span> Adicionar assinatura';
+  addIcons(addSignaturePdf);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1056,10 +1075,12 @@ quotesList.addEventListener("click", async (event) => {
       } else {
         quote.status = "approved";
         quote.depositPaid = true;
+        quote.inAgenda = true;
         await saveQuote(quote);
         renderQuotes(quoteSearch.value);
+        renderCalendar();
         renderHome();
-        toast.textContent = "Sinal confirmado. Evento adicionado à agenda.";
+        toast.textContent = "Orçamento aprovado e enviado para a agenda.";
         toast.classList.add("visible");
         window.setTimeout(() => toast.classList.remove("visible"), 2800);
       }
@@ -1078,80 +1099,87 @@ quotesList.addEventListener("click", async (event) => {
     return;
   }
 
-  const agendaButton = event.target.closest("[data-quote-agenda]");
-  if (agendaButton) {
-    const quotes = getQuotes();
-    const quote = quotes.find((item) => String(item.id) === String(agendaButton.dataset.quoteAgenda));
-    if (quote) {
-      if (quote.inAgenda) {
-        quote.inAgenda = false;
-        if (quote.status === "scheduled") quote.status = "draft";
-        toast.textContent = "Evento removido da agenda.";
-      } else {
-        quote.inAgenda = true;
-        quote.status = "scheduled";
-        toast.textContent = "Evento adicionado à agenda.";
-      }
-      await saveQuote(quote);
-      renderQuotes(quoteSearch.value);
-      renderCalendar();
-      renderHome();
-      toast.classList.add("visible");
-      window.setTimeout(() => toast.classList.remove("visible"), 2800);
-    }
-    return;
-  }
-
   const cancelButton = event.target.closest("[data-quote-cancel]");
   if (cancelButton) {
-    const quotes = getQuotes();
-    const quote = quotes.find((item) => String(item.id) === String(cancelButton.dataset.quoteCancel));
-    if (quote) {
-      if (quote.status === "cancelled") {
-        quote.status = "draft";
-        delete quote.cancelledAt;
-        toast.textContent = "Orçamento reativado.";
-      } else {
-        quote.status = "cancelled";
-        quote.cancelledAt = new Date().toISOString();
-        quote.inAgenda = false;
-        toast.textContent = "Orçamento cancelado.";
-      }
-      await saveQuote(quote);
-      renderQuotes(quoteSearch.value);
-      renderCalendar();
-      renderHome();
-      toast.classList.add("visible");
-      window.setTimeout(() => toast.classList.remove("visible"), 2800);
-    }
+    openQuoteActionModal("cancel", cancelButton.dataset.quoteCancel);
     return;
   }
 
   const archiveButton = event.target.closest("[data-quote-archive]");
   if (archiveButton) {
-    const quotes = getQuotes();
-    const quote = quotes.find((item) => String(item.id) === String(archiveButton.dataset.quoteArchive));
-    if (quote) {
-      if (quote.archived) {
-        quote.archived = false;
-        delete quote.archivedAt;
-        toast.textContent = "Orçamento desarquivado.";
-      } else {
-        quote.archived = true;
-        quote.archivedAt = new Date().toISOString();
-        toast.textContent = "Orçamento arquivado.";
-      }
-      await saveQuote(quote);
-      renderQuotes(quoteSearch.value);
-      renderHome();
-      toast.classList.add("visible");
-      window.setTimeout(() => toast.classList.remove("visible"), 2800);
-    }
+    openQuoteActionModal("archive", archiveButton.dataset.quoteArchive);
     return;
   }
 });
 
 // ─── Home page dynamic render ───────────────────────────────────────────────
+function openQuoteActionModal(action, quoteId) {
+  const quote = getQuotes().find((item) => String(item.id) === String(quoteId));
+  if (!quote) return;
+  pendingQuoteAction = { action, quoteId };
+  const isUndo = action === "cancel" ? quote.status === "cancelled" : Boolean(quote.archived);
+  quoteActionTitle.textContent = action === "cancel"
+    ? (isUndo ? "Reativar orçamento?" : "Cancelar orçamento?")
+    : (isUndo ? "Desarquivar orçamento?" : "Arquivar orçamento?");
+  quoteActionMessage.textContent = action === "cancel"
+    ? (isUndo ? "O orçamento voltará para a lista ativa." : "O orçamento sairá da agenda e da lista ativa.")
+    : (isUndo ? "O orçamento voltará para a lista ativa." : "O orçamento será removido da lista ativa, mas ficará em Arquivados.");
+  confirmQuoteAction.textContent = isUndo ? "Sim, reativar" : "Sim, confirmar";
+  quoteActionModal.hidden = false;
+}
+
+function closeQuoteActionModal() {
+  pendingQuoteAction = null;
+  quoteActionModal.hidden = true;
+}
+
+async function applyPendingQuoteAction() {
+  if (!pendingQuoteAction) return;
+  const { action, quoteId } = pendingQuoteAction;
+  const quote = getQuotes().find((item) => String(item.id) === String(quoteId));
+  if (!quote) {
+    closeQuoteActionModal();
+    return;
+  }
+
+  if (action === "cancel") {
+    if (quote.status === "cancelled") {
+      quote.status = "draft";
+      delete quote.cancelledAt;
+      toast.textContent = "Orçamento reativado.";
+    } else {
+      quote.status = "cancelled";
+      quote.cancelledAt = new Date().toISOString();
+      quote.inAgenda = false;
+      toast.textContent = "Orçamento cancelado.";
+    }
+  } else {
+    if (quote.archived) {
+      quote.archived = false;
+      delete quote.archivedAt;
+      toast.textContent = "Orçamento desarquivado.";
+    } else {
+      quote.archived = true;
+      quote.archivedAt = new Date().toISOString();
+      toast.textContent = "Orçamento arquivado.";
+    }
+  }
+
+  await saveQuote(quote);
+  renderQuotes(quoteSearch.value);
+  renderCalendar();
+  renderHome();
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+  closeQuoteActionModal();
+}
+
+cancelQuoteAction.addEventListener("click", closeQuoteActionModal);
+confirmQuoteAction.addEventListener("click", applyPendingQuoteAction);
+quoteActionModal.addEventListener("click", (event) => {
+  if (event.target === quoteActionModal) closeQuoteActionModal();
+});
+
 const homeQuoteList = document.querySelector("#homeQuoteList");
 const homeEmptyQuotes = document.querySelector("#homeEmptyQuotes");
 const homeEventList = document.querySelector("#homeEventList");
@@ -1242,11 +1270,12 @@ approveConfirm.addEventListener("click", async () => {
   if (quote) {
     quote.status = "draft";
     quote.depositPaid = false;
+    quote.inAgenda = false;
     await saveQuote(quote);
     renderQuotes(quoteSearch.value);
     renderCalendar();
     renderHome();
-    toast.textContent = "Confirmação revertida. Evento removido da agenda.";
+    toast.textContent = "Aprovação revertida. Evento removido da agenda.";
     toast.classList.add("visible");
     window.setTimeout(() => toast.classList.remove("visible"), 2800);
   }
@@ -1293,57 +1322,102 @@ agendaDetailsModal.addEventListener("click", (event) => {
   if (event.target === agendaDetailsModal) agendaDetailsModal.hidden = true;
 });
 backFromPdf.addEventListener("click", showQuoteList);
-shareQuotePdf.addEventListener("click", async () => {
-  if (!activePdfQuote || typeof html2pdf === "undefined") {
-    toast.textContent = "Não foi possível gerar o PDF. Verifique sua conexão.";
-    toast.classList.add("visible");
-    window.setTimeout(() => toast.classList.remove("visible"), 2800);
-    return;
-  }
 
+addSignaturePdf.addEventListener("click", async () => {
+  if (!activePdfQuote) return;
+  activePdfQuote.priscilaSignature = !activePdfQuote.priscilaSignature;
+  const saved = await saveQuote(activePdfQuote);
+  activePdfQuote = saved;
+  renderQuotePdf(activePdfQuote);
+  addSignaturePdf.innerHTML = activePdfQuote.priscilaSignature
+    ? '<span data-icon="x"></span> Remover assinatura'
+    : '<span data-icon="edit"></span> Adicionar assinatura';
+  addIcons();
+  toast.textContent = activePdfQuote.priscilaSignature ? "Assinatura adicionada ao orçamento." : "Assinatura removida do orçamento.";
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+});
+
+function showPdfError(message) {
+  toast.textContent = message;
+  toast.classList.add("visible");
+  window.setTimeout(() => toast.classList.remove("visible"), 2800);
+}
+
+async function generateQuotePdfBlob() {
+  if (!activePdfQuote || typeof html2pdf === "undefined") {
+    throw new Error("PDF indisponivel");
+  }
+  const quoteIndex = Math.max(0, getQuotes().findIndex((quote) => String(quote.id) === String(activePdfQuote.id)));
+  const fileName = `orcamento-yupii-${quoteNumber(activePdfQuote, quoteIndex).replace("#", "")}.pdf`;
+  const options = {
+    margin: 0,
+    filename: fileName,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  };
+  const blob = await html2pdf().set(options).from(pdfDocument).outputPdf("blob");
+  return { blob, fileName, quoteIndex };
+}
+
+async function handleQuotePdfAction(action) {
   const originalText = shareQuotePdf.innerHTML;
   shareQuotePdf.disabled = true;
+  downloadQuotePdf.disabled = true;
+  confirmShareQuotePdf.disabled = true;
   shareQuotePdf.textContent = "Gerando PDF...";
 
   try {
-    const quoteIndex = Math.max(0, getQuotes().findIndex((quote) => String(quote.id) === String(activePdfQuote.id)));
-    const fileName = `orcamento-yupii-${quoteNumber(activePdfQuote, quoteIndex).replace("#", "")}.pdf`;
-    const options = {
-      margin: 0,
-      filename: fileName,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    };
-    const blob = await html2pdf().set(options).from(pdfDocument).outputPdf("blob");
+    const { blob, fileName, quoteIndex } = await generateQuotePdfBlob();
     const file = new File([blob], fileName, { type: "application/pdf" });
 
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: "Orçamento Yupii",
-        text: `Orçamento ${quoteNumber(activePdfQuote, quoteIndex)} - Yupii Personalizados e Festas`,
-      });
+    if (action === "share") {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "Orçamento Yupii",
+          text: `Orçamento ${quoteNumber(activePdfQuote, quoteIndex)} - Yupii Personalizados e Festas`,
+        });
+      } else {
+        showPdfError("Compartilhamento indisponível neste aparelho. Baixei o PDF para você.");
+        downloadPdfBlob(blob, fileName);
+      }
     } else {
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = fileName;
-      link.click();
-      URL.revokeObjectURL(link.href);
-      toast.textContent = "PDF salvo no aparelho.";
-      toast.classList.add("visible");
-      window.setTimeout(() => toast.classList.remove("visible"), 2800);
+      downloadPdfBlob(blob, fileName);
+      showPdfError("PDF salvo no aparelho.");
     }
   } catch (error) {
-    if (error.name !== "AbortError") {
-      toast.textContent = "Não foi possível compartilhar o PDF.";
-      toast.classList.add("visible");
-      window.setTimeout(() => toast.classList.remove("visible"), 2800);
-    }
+    if (error.name !== "AbortError") showPdfError("Não foi possível gerar o PDF.");
   } finally {
+    pdfChoiceModal.hidden = true;
     shareQuotePdf.disabled = false;
+    downloadQuotePdf.disabled = false;
+    confirmShareQuotePdf.disabled = false;
     shareQuotePdf.innerHTML = originalText;
   }
+}
+
+function downloadPdfBlob(blob, fileName) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+shareQuotePdf.addEventListener("click", () => {
+  if (!activePdfQuote || typeof html2pdf === "undefined") {
+    showPdfError("Não foi possível gerar o PDF. Verifique sua conexão.");
+    return;
+  }
+  pdfChoiceModal.hidden = false;
+});
+
+downloadQuotePdf.addEventListener("click", () => handleQuotePdfAction("download"));
+confirmShareQuotePdf.addEventListener("click", () => handleQuotePdfAction("share"));
+pdfChoiceModal.addEventListener("click", (event) => {
+  if (event.target === pdfChoiceModal) pdfChoiceModal.hidden = true;
 });
 quoteItems.addEventListener("input", updateQuoteTotals);
 quoteItems.addEventListener("click", (event) => {
