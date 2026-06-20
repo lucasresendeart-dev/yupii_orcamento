@@ -1412,6 +1412,30 @@ button {
   font-size: 10px;
 }
 
+.discount-input {
+  display: grid;
+  grid-template-columns: 62px 90px;
+  gap: 8px;
+  align-items: center;
+}
+
+.discount-input select,
+.discount-input input {
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  color: var(--ink);
+  background: #fdfbfc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 10px;
+}
+
+.discount-input input {
+  text-align: right;
+}
+
 .summary-total {
   padding: 19px 0;
 }
@@ -1570,6 +1594,8 @@ button {
 
 .pdf-section {
   margin-top: 22px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .pdf-section-title {
@@ -1611,6 +1637,8 @@ button {
   grid-template-columns: 1fr 210px;
   gap: 28px;
   margin-top: 20px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .pdf-conditions {
@@ -1666,6 +1694,8 @@ button {
   grid-template-columns: repeat(2, 1fr);
   gap: 50px;
   margin-top: 46px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .pdf-signature {
@@ -1673,6 +1703,8 @@ button {
   padding-top: 7px;
   border-top: 1px solid #b9adb1;
   text-align: center;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .pdf-signature-image {

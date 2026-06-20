@@ -93,4 +93,6 @@ O modo local salva os dados em `.local-db.json`, que esta no `.gitignore`.
 
 - Nao suba `.env`, `.env.local` ou connection string para o GitHub.
 - O Render precisa da variavel `DATABASE_URL` para salvar dados no banco real.
-- A senha simples de acesso esta em `script.js` como `ACCESS_PASSWORD`.
+- Senhas atuais de acesso:
+  - Admin: `admin0910`
+  - Usuario: `0112`

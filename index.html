@@ -437,7 +437,16 @@
               </div>
               <div class="summary-lines">
                 <div><span>Itens e serviços</span><strong id="quoteSubtotal">R$ 0,00</strong></div>
-                <label><span>Desconto</span><div class="money-input"><span>R$</span><input id="quoteDiscount" inputmode="decimal" value="0,00" /></div></label>
+                <label>
+                  <span>Desconto</span>
+                  <div class="discount-input">
+                    <select id="quoteDiscountType" aria-label="Tipo de desconto">
+                      <option value="amount">R$</option>
+                      <option value="percent">%</option>
+                    </select>
+                    <input id="quoteDiscount" inputmode="decimal" value="0,00" />
+                  </div>
+                </label>
                 <label><span>Frete / entrega</span><div class="money-input"><span>R$</span><input id="quoteDelivery" inputmode="decimal" value="0,00" /></div></label>
               </div>
               <div class="summary-total">

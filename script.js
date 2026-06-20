@@ -108,7 +108,10 @@ const companyInfo = {
   phone: "(37) 99198-9691",
 };
 
-const ACCESS_PASSWORD = "123";
+const ACCESS_PASSWORDS = {
+  admin: "admin0910",
+  user: "0112",
+};
 const loadingOverlay = document.querySelector("#loadingOverlay");
 const accessScreen = document.querySelector("#accessScreen");
 const accessForm = document.querySelector("#accessForm");
@@ -151,7 +154,9 @@ bootApp();
 
 accessForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (accessPassword.value === ACCESS_PASSWORD) {
+  const role = Object.entries(ACCESS_PASSWORDS).find(([, password]) => accessPassword.value === password)?.[0];
+  if (role) {
+    sessionStorage.setItem("yupiiRole", role);
     accessMessage.textContent = "";
     await unlockApp();
     return;
@@ -210,6 +215,7 @@ const packagePickerList = document.querySelector("#packagePickerList");
 const emptyPackagePicker = document.querySelector("#emptyPackagePicker");
 const closePackagePickerButton = document.querySelector("#closePackagePicker");
 const quoteDiscount = document.querySelector("#quoteDiscount");
+const quoteDiscountType = document.querySelector("#quoteDiscountType");
 const quoteDelivery = document.querySelector("#quoteDelivery");
 const quoteDepositPercent = document.querySelector("#quoteDepositPercent");
 const quoteSubtotal = document.querySelector("#quoteSubtotal");
@@ -787,9 +793,9 @@ function renderQuotes(query = "") {
         </div>
         <strong class="quote-management-value">${currency(quote.total)}</strong>
         <div class="quote-management-states">
-          <button class="quote-status-action ${isApproved ? "is-received" : "is-pending"}" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "OrÃ§amento aprovado" : "Aprovar orÃ§amento"}">
+          <button class="quote-status-action ${isApproved ? "is-received" : "is-pending"}" type="button" data-confirm-quote="${quote.id}" title="${isApproved ? "Orçamento aprovado" : "Aprovar orçamento"}">
             <span class="quote-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${isApproved ? icons.check : icons.clock}</svg></span>
-            <span>${isApproved ? "Aprovado" : "Aprovar orÃ§amento"}</span>
+            <span>${isApproved ? "Aprovado" : "Aprovar orçamento"}</span>
           </button>
           ${extraTag}
         </div>
@@ -830,6 +836,7 @@ function showQuoteForm(quoteId = null) {
   quoteForm.reset();
   quoteItems.innerHTML = "";
   quoteDiscount.value = "0,00";
+  quoteDiscountType.value = "amount";
   quoteDelivery.value = "0,00";
   quoteDepositPercent.value = "50";
 
@@ -855,6 +862,7 @@ function showQuoteForm(quoteId = null) {
         if (quoteForm.elements.pickupTime) quoteForm.elements.pickupTime.value = pickup.time;
       }
       quoteDiscount.value = quote.discount ? String(quote.discount).replace(".", ",") : "0,00";
+      quoteDiscountType.value = quote.discountType || "amount";
       quoteDelivery.value = quote.delivery ? String(quote.delivery).replace(".", ",") : "0,00";
       quoteDepositPercent.value = quote.depositPercent || 50;
       (quote.items || []).forEach((item) => addQuoteItem(item));
@@ -881,6 +889,8 @@ function renderQuotePdf(quote) {
   const client = getClients().find((item) => String(item.id) === String(quote.quoteClient)) || {};
   const clientName = client.tradeName || client.clientName || "Cliente não encontrado";
   const itemsSubtotal = (quote.items || []).reduce((total, item) => total + Number(item.quantity || 0) * Number(item.price || 0), 0);
+  const discountValue = quoteDiscountAmount(itemsSubtotal, quote.discount, quote.discountType || "amount");
+  const discountLabel = quote.discountType === "percent" ? `${Number(quote.discount || 0)}%` : currency(discountValue);
   const total = Number(quote.total || 0);
   const depositPercent = Number(quote.depositPercent || 50);
   const deposit = total * depositPercent / 100;
@@ -951,7 +961,7 @@ function renderQuotePdf(quote) {
       <div>
         <div class="pdf-totals">
           <div><span>Itens e serviços</span><strong>${currency(itemsSubtotal)}</strong></div>
-          <div><span>Desconto</span><strong>- ${currency(quote.discount)}</strong></div>
+          <div><span>Desconto${quote.discountType === "percent" ? ` (${discountLabel})` : ""}</span><strong>- ${currency(discountValue)}</strong></div>
           <div><span>Frete / entrega</span><strong>${currency(quote.delivery)}</strong></div>
           <div class="pdf-grand-total"><span>Total</span><strong>${currency(total)}</strong></div>
         </div>
@@ -1002,6 +1012,22 @@ function updateThemePackageTotal() {
   document.querySelector("#packagePrice").value = currency(packagePrice).replace("R$", "").trim();
 }
 
+function quoteDiscountAmount(subtotal, value = quoteDiscount.value, type = quoteDiscountType.value) {
+  const parsed = parseMoney(value);
+  if (type === "percent") return subtotal * Math.min(100, Math.max(0, parsed)) / 100;
+  return Math.min(subtotal, Math.max(0, parsed));
+}
+
+function applyPackageDiscountToQuote(amount) {
+  if (!amount || amount <= 0) return;
+  const currentSubtotal = [...quoteItems.querySelectorAll(".quote-item-row")].reduce((total, row) => {
+    return total + (Number(row.querySelector(".item-quantity").value) || 0) * parseMoney(row.querySelector(".item-price").value);
+  }, 0);
+  const currentDiscount = quoteDiscountAmount(currentSubtotal);
+  quoteDiscountType.value = "amount";
+  quoteDiscount.value = String(currentDiscount + amount).replace(".", ",");
+}
+
 function addQuoteItem(data = {}, container = quoteItems) {
   const row = document.createElement("div");
   row.className = "quote-item-row";
@@ -1029,7 +1055,7 @@ function updateQuoteTotals() {
     row.querySelector(".quote-item-total").textContent = currency(itemTotal);
     subtotal += itemTotal;
   });
-  const total = Math.max(0, subtotal - parseMoney(quoteDiscount.value) + parseMoney(quoteDelivery.value));
+  const total = Math.max(0, subtotal - quoteDiscountAmount(subtotal) + parseMoney(quoteDelivery.value));
   const deposit = total * Math.min(100, Math.max(0, Number(quoteDepositPercent.value) || 0)) / 100;
   quoteSubtotal.textContent = currency(subtotal);
   quoteTotal.textContent = currency(total);
@@ -1101,15 +1127,7 @@ function addPackageToQuote(themeId) {
   });
 
   const savings = itemsSum - Number(theme.packagePrice || 0);
-  if (savings > 0) {
-    addQuoteItem({
-      description: `Desconto do pacote: ${theme.themeName} · ${theme.packageName}`,
-      type: "Desconto",
-      quantity: 1,
-      price: -savings,
-      extraClass: "package-discount-row",
-    }, group);
-  }
+  applyPackageDiscountToQuote(savings);
 
   updateQuoteTotals();
   toast.textContent = "Pacote adicionado ao orçamento.";
@@ -1498,6 +1516,7 @@ async function generateQuotePdfBlob() {
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css", "legacy"], avoid: [".pdf-section", ".pdf-financial", ".pdf-footer", ".pdf-signature"] },
   };
   const blob = await html2pdf().set(options).from(pdfDocument).outputPdf("blob");
   return { blob, fileName, quoteIndex };
@@ -1570,6 +1589,7 @@ quoteItems.addEventListener("click", (event) => {
   }
 });
 [quoteDiscount, quoteDelivery, quoteDepositPercent].forEach((input) => input.addEventListener("input", updateQuoteTotals));
+quoteDiscountType.addEventListener("change", updateQuoteTotals);
 cancelQuote.addEventListener("click", showQuoteList);
 
 quoteForm.addEventListener("submit", async (event) => {
@@ -1593,6 +1613,7 @@ quoteForm.addEventListener("submit", async (event) => {
     price: parseMoney(row.querySelector(".item-price").value),
   }));
   data.discount = parseMoney(quoteDiscount.value);
+  data.discountType = quoteDiscountType.value;
   data.delivery = parseMoney(quoteDelivery.value);
   data.depositPercent = Number(quoteDepositPercent.value) || 0;
   data.total = parseMoney(quoteTotal.textContent);
