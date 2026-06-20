@@ -331,9 +331,11 @@
                 <div class="quote-form-grid">
                   <label class="field">
                     <span>Cliente</span>
-                    <select id="quoteClient" name="quoteClient" required>
-                      <option value="">Selecione um cliente</option>
-                    </select>
+                    <div class="client-combobox" id="quoteClientCombobox">
+                      <input id="quoteClientSearch" autocomplete="off" placeholder="Digite para buscar o cliente" required />
+                      <input id="quoteClient" name="quoteClient" type="hidden" required />
+                      <div class="client-combobox-list" id="quoteClientSuggestions" hidden></div>
+                    </div>
                   </label>
                   <label class="field">
                     <span>Nome da festa</span>

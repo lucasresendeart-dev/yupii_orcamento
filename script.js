@@ -200,6 +200,8 @@ const emptyClients = document.querySelector("#emptyClients");
 const clientCount = document.querySelector("#clientCount");
 const quoteForm = document.querySelector("#quoteForm");
 const quoteClient = document.querySelector("#quoteClient");
+const quoteClientSearch = document.querySelector("#quoteClientSearch");
+const quoteClientSuggestions = document.querySelector("#quoteClientSuggestions");
 const quoteItems = document.querySelector("#quoteItems");
 const addQuoteItemButton = document.querySelector("#addQuoteItem");
 const addQuotePackageButton = document.querySelector("#addQuotePackageButton");
@@ -580,7 +582,8 @@ function renderCalendar() {
     date.setDate(start.getDate() + index);
     const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const dayEvents = events.filter((quote) => quote.eventDate === iso);
-    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}"><span class="calendar-day-number">${date.getDate()}</span>${dayEvents.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
+    const dayLabel = date.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).replace(".", "");
+    return `<div class="calendar-day${date.getMonth() !== month ? " outside" : ""}${iso === todayIso ? " today" : ""}${dayEvents.length ? " has-event" : ""}"><div class="calendar-day-heading"><span class="calendar-day-number">${date.getDate()}</span><span class="calendar-day-label">${dayLabel}</span></div>${dayEvents.map((quote) => `<button class="calendar-event" type="button" data-agenda-quote="${quote.id}"><strong>${escapeHtml(quote.eventName || "Festa")}</strong><span>${escapeHtml(quoteClientName(quote))}${quote.eventTime ? ` · ${quote.eventTime}` : ""}</span></button>`).join("")}</div>`;
   }).join("");
 }
 
@@ -799,6 +802,7 @@ function showQuoteForm(quoteId = null) {
         const el = quoteForm.elements[name];
         if (el && quote[name] !== undefined) el.value = quote[name];
       });
+      setQuoteClient(quote.quoteClient);
       if (!quote.setupDate && quote.setupDateTime) {
         const setup = splitDateTime(quote.setupDateTime);
         if (quoteForm.elements.setupDate) quoteForm.elements.setupDate.value = setup.date;
@@ -1080,15 +1084,56 @@ packagePickerList.addEventListener("click", (event) => {
 
 function prepareQuotePage() {
   const selected = quoteClient.value;
-  quoteClient.innerHTML = '<option value="">Selecione um cliente</option>' + getClients().map((client) => {
-    const name = client.tradeName || client.clientName || "Cliente sem nome";
-    return `<option value="${client.id}">${escapeHtml(name)} · ${escapeHtml(client.document || "")}</option>`;
-  }).join("");
-  quoteClient.value = selected;
+  setQuoteClient(selected);
+  renderQuoteClientSuggestions(quoteClientSearch.value);
 }
 
+function quoteClientDisplayName(client) {
+  return client.tradeName || client.clientName || "Cliente sem nome";
+}
+
+function setQuoteClient(clientId) {
+  const client = getClients().find((item) => String(item.id) === String(clientId));
+  quoteClient.value = client ? client.id : "";
+  quoteClientSearch.value = client ? `${quoteClientDisplayName(client)} · ${client.document || "sem documento"}` : "";
+}
+
+function renderQuoteClientSuggestions(query = "") {
+  const normalized = query.toLocaleLowerCase("pt-BR").trim();
+  const normalizedDigits = digits(query);
+  const clients = getClients()
+    .filter((client) => {
+      const searchable = [client.clientName, client.tradeName, client.document, client.phone].join(" ").toLocaleLowerCase("pt-BR");
+      return !normalized || searchable.includes(normalized) || digits(searchable).includes(normalizedDigits);
+    })
+    .slice(0, 8);
+
+  quoteClientSuggestions.innerHTML = clients.length
+    ? clients.map((client) => `
+      <button class="client-combobox-option" type="button" data-quote-client-option="${client.id}">
+        <strong>${escapeHtml(quoteClientDisplayName(client))}</strong>
+        <span>${escapeHtml(client.document || client.phone || "Sem documento")}</span>
+      </button>
+    `).join("")
+    : '<div class="client-combobox-empty">Nenhum cliente encontrado</div>';
+  quoteClientSuggestions.hidden = false;
+}
 addQuoteItemButton.addEventListener("click", () => addQuoteItem());
 newQuoteActions.forEach((button) => button.addEventListener("click", () => showQuoteForm()));
+quoteClientSearch.addEventListener("input", () => {
+  quoteClient.value = "";
+  renderQuoteClientSuggestions(quoteClientSearch.value);
+});
+quoteClientSearch.addEventListener("focus", () => renderQuoteClientSuggestions(quoteClientSearch.value));
+quoteClientSuggestions.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-quote-client-option]");
+  if (!option) return;
+  setQuoteClient(option.dataset.quoteClientOption);
+  quoteClientSuggestions.hidden = true;
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("#quoteClientCombobox")) quoteClientSuggestions.hidden = true;
+});
 quoteSearch.addEventListener("input", () => renderQuotes(quoteSearch.value));
 if (quoteStatusFilter) {
   quoteStatusFilter.addEventListener("change", () => renderQuotes(quoteSearch.value));
@@ -1461,6 +1506,15 @@ cancelQuote.addEventListener("click", showQuoteList);
 
 quoteForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!quoteClient.value) {
+    quoteClientSearch.focus();
+    quoteClientSuggestions.hidden = false;
+    renderQuoteClientSuggestions(quoteClientSearch.value);
+    toast.textContent = "Selecione um cliente da lista.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    return;
+  }
   const quotes = getQuotes();
   const data = Object.fromEntries(new FormData(quoteForm).entries());
   data.company = companyInfo;
