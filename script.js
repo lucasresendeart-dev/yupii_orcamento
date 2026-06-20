@@ -118,6 +118,27 @@ const accessForm = document.querySelector("#accessForm");
 const accessPassword = document.querySelector("#accessPassword");
 const accessMessage = document.querySelector("#accessMessage");
 const appShell = document.querySelector("#appShell");
+const logoutButton = document.querySelector("#logoutButton");
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
+let inactivityTimer = null;
+
+function resetInactivityTimer() {
+  if (sessionStorage.getItem("yupiiAccess") !== "granted") return;
+  window.clearTimeout(inactivityTimer);
+  inactivityTimer = window.setTimeout(() => lockApp("Sessão expirada por inatividade. Digite a senha novamente."), INACTIVITY_LIMIT_MS);
+}
+
+function lockApp(message = "") {
+  window.clearTimeout(inactivityTimer);
+  inactivityTimer = null;
+  sessionStorage.removeItem("yupiiAccess");
+  sessionStorage.removeItem("yupiiRole");
+  appShell.hidden = true;
+  accessScreen.hidden = false;
+  accessPassword.value = "";
+  accessMessage.textContent = message;
+  accessPassword.focus();
+}
 
 async function unlockApp() {
   sessionStorage.setItem("yupiiAccess", "granted");
@@ -132,6 +153,7 @@ async function unlockApp() {
     window.setTimeout(() => toast.classList.remove("visible"), 2800);
   }
   renderHome();
+  resetInactivityTimer();
 }
 
 async function bootApp() {
@@ -163,6 +185,11 @@ accessForm.addEventListener("submit", async (event) => {
   }
   accessMessage.textContent = "Senha incorreta. Tente novamente.";
   accessPassword.select();
+});
+
+logoutButton.addEventListener("click", () => lockApp("Você saiu do sistema."));
+["click", "keydown", "mousemove", "touchstart", "scroll"].forEach((eventName) => {
+  document.addEventListener(eventName, resetInactivityTimer, { passive: true });
 });
 
 function addIcons(root = document) {
