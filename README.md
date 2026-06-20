@@ -1,65 +1,96 @@
 # Yupii Personalizados e Festas
 
-Aplicação web para gestão de clientes, orçamentos e catálogo de pacotes/temas.
+Aplicacao web para gestao de clientes, orcamentos, catalogo de pacotes e agenda de eventos.
 
 ## Stack
 
-- Frontend: HTML/CSS/JS puro
-- Backend: Node.js + Express (`server.js`)
-- Banco de dados: Neon (Postgres)
+- Frontend: HTML, CSS e JavaScript puro
+- Backend: Node.js + Express
+- Banco em producao: Postgres/Neon via `DATABASE_URL`
 - Hospedagem: Render
 
-## 1. Configurar o banco no Neon
+## Rodar no Render
 
-1. Crie um projeto em https://neon.tech
-2. Abra o **SQL Editor** e execute o conteúdo de `schema.sql`
-3. Copie a *connection string* (Dashboard > Connection Details):
-   ```
-   postgresql://usuario:senha@host.neon.tech/neondb?sslmode=require
-   ```
-
-## 2. Subir para o GitHub
+No Render, configure o Web Service com:
 
 ```bash
+Build Command: npm install
+Start Command: npm start
+```
+
+Em **Environment**, configure:
+
+```bash
+DATABASE_URL=sua_connection_string_do_neon
+```
+
+O comando `npm start` executa:
+
+```bash
+node server.js
+```
+
+Esse servidor entrega o frontend e as rotas:
+
+```text
+/api/clients
+/api/themes
+/api/quotes
+```
+
+## Banco de dados
+
+Execute o arquivo `schema.sql` no Neon ou no Postgres usado em producao.
+
+Tabelas esperadas:
+
+```text
+clients
+themes
+quotes
+```
+
+Cada tabela armazena os dados em uma coluna `data` do tipo `JSONB`.
+
+## Subir para o GitHub
+
+```bash
+cd /c/Users/lucas/OneDrive/Desktop/yupii_orcamento
 git init
 git add .
-git commit -m "Yupii - app com Express e Neon"
+git commit -m "Atualiza app Yupii"
 git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git
+git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
 git push -u origin main
 ```
 
-## 3. Deploy no Render
+Se o repositorio ja existir localmente:
 
-1. Acesse https://render.com → **New** → **Web Service**
-2. Conecte sua conta do GitHub e selecione o repositório
-3. Configure:
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-4. Em **Environment**, adicione a variável:
-   - `DATABASE_URL` = (connection string do Neon)
-5. Clique em **Create Web Service**
+```bash
+git add .
+git commit -m "Atualiza app Yupii"
+git push
+```
 
-O Render vai instalar as dependências, iniciar o `server.js`, que serve o frontend e as rotas `/api/clients`, `/api/themes`, `/api/quotes`.
+## Teste local opcional sem Neon
 
-## 4. Testar localmente (opcional)
+Para testar localmente sem banco externo:
 
 ```bash
 npm install
+npm run local
 ```
 
-Crie um arquivo `.env` com:
-```
-DATABASE_URL=postgresql://usuario:senha@host.neon.tech/neondb?sslmode=require
+Abra:
+
+```text
+http://localhost:3000
 ```
 
-E rode:
-```bash
-node -r dotenv/config server.js
-```
-(ou instale `dotenv` com `npm install dotenv` para carregar o `.env` automaticamente)
+O modo local salva os dados em `.local-db.json`, que esta no `.gitignore`.
 
-## Observações de segurança
+## Observacoes
 
-- Troque a senha de acesso fixa (`ACCESS_PASSWORD` em `script.js`) por uma autenticação real antes de usar em produção.
-- Nunca commite o `.env` ou a connection string do Neon no repositório.
+- Nao suba `.env`, `.env.local` ou connection string para o GitHub.
+- O Render precisa da variavel `DATABASE_URL` para salvar dados no banco real.
+- A senha simples de acesso esta em `script.js` como `ACCESS_PASSWORD`.
