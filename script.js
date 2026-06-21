@@ -243,7 +243,10 @@ const quoteClientSuggestions = document.querySelector("#quoteClientSuggestions")
 const quoteItems = document.querySelector("#quoteItems");
 const addQuoteItemButton = document.querySelector("#addQuoteItem");
 const addQuotePackageButton = document.querySelector("#addQuotePackageButton");
+const addQuoteCatalogItemButton = document.querySelector("#addQuoteCatalogItemButton");
 const packagePickerModal = document.querySelector("#packagePickerModal");
+const packagePickerTitle = document.querySelector("#packagePickerTitle");
+const packagePickerDescription = document.querySelector("#packagePickerDescription");
 const packagePickerList = document.querySelector("#packagePickerList");
 const emptyPackagePicker = document.querySelector("#emptyPackagePicker");
 const closePackagePickerButton = document.querySelector("#closePackagePicker");
@@ -320,6 +323,7 @@ const closeAgendaDetails = document.querySelector("#closeAgendaDetails");
 let editingThemeId = null;
 let catalogFormMode = "package";
 let activeCatalogTab = "package";
+let packagePickerMode = "package";
 let editingQuoteId = null;
 let visibleCalendarDate = new Date();
 let pendingSignalReversalId = null;
@@ -1254,8 +1258,13 @@ function updateQuoteTotals() {
 }
 
 function renderPackagePicker() {
-  const themes = getThemes();
+  const showingSingles = packagePickerMode === "single";
+  const themes = getThemes().filter((theme) => isCatalogSingle(theme) === showingSingles);
+  packagePickerTitle.textContent = showingSingles ? "Escolha um item avulso" : "Escolha um pacote";
+  packagePickerDescription.textContent = showingSingles ? "Clique em um item avulso cadastrado para adicioná-lo ao orçamento." : "Clique em um pacote para ver os itens inclusos e adicioná-lo ao orçamento.";
   emptyPackagePicker.hidden = themes.length > 0;
+  emptyPackagePicker.querySelector("strong").textContent = showingSingles ? "Nenhum item avulso cadastrado" : "Nenhum pacote cadastrado";
+  emptyPackagePicker.querySelector("p").textContent = showingSingles ? "Cadastre itens avulsos no Catálogo para adicioná-los aqui." : "Cadastre pacotes no Catálogo para adicioná-los aqui.";
   packagePickerList.innerHTML = themes.map((theme) => {
     const items = theme.items || [];
     const isSingle = isCatalogSingle(theme);
@@ -1288,7 +1297,8 @@ function renderPackagePicker() {
   });
 }
 
-function openPackagePicker() {
+function openPackagePicker(mode = "package") {
+  packagePickerMode = mode;
   renderPackagePicker();
   packagePickerModal.hidden = false;
 }
@@ -1347,7 +1357,8 @@ function addPackageToQuote(themeId) {
   window.setTimeout(() => toast.classList.remove("visible"), 2800);
 }
 
-addQuotePackageButton.addEventListener("click", openPackagePicker);
+addQuotePackageButton.addEventListener("click", () => openPackagePicker("package"));
+addQuoteCatalogItemButton.addEventListener("click", () => openPackagePicker("single"));
 closePackagePickerButton.addEventListener("click", closePackagePicker);
 packagePickerModal.addEventListener("click", (event) => {
   if (event.target === packagePickerModal) closePackagePicker();

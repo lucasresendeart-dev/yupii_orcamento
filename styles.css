@@ -957,7 +957,7 @@ button {
 
 .form-actions .secondary-button,
 .form-actions .primary-button {
-  width: auto;
+  width: 150px;
   min-width: 130px;
   margin: 0;
 }
@@ -1179,9 +1179,17 @@ button {
 }
 
 .quote-section-actions {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
   gap: 10px;
+  width: min(100%, 480px);
+}
+
+.quote-section-actions .compact-button {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 12px;
+  text-align: center;
 }
 
 .package-picker-wrapper {
@@ -2636,14 +2644,20 @@ h1 {
 }
 
 .secondary-button {
-  width: 100%;
-  margin-top: 16px;
-  padding: 11px;
+  width: auto;
+  min-width: 142px;
+  margin: 0;
+  padding: 11px 16px;
   color: var(--pink-700);
   background: var(--white);
-  border: 1px solid var(--pink-100);
+  border: 1.5px solid var(--pink-500);
   border-radius: 12px;
   font-size: 11px;
+}
+
+.secondary-button:hover {
+  background: var(--pink-50);
+  border-color: var(--pink-500);
 }
 
 .toast {
@@ -2763,12 +2777,10 @@ h1 {
   }
 
   .quote-section-actions {
-    flex-wrap: wrap;
     width: 100%;
   }
 
-  .compact-button {
-    flex: 1;
+  .quote-section-actions .compact-button {
     min-width: 0;
   }
 
@@ -2941,10 +2953,11 @@ h1 {
     justify-content: stretch;
   }
 
-  .theme-detail-actions .secondary-button {
-    flex: 1 1 130px;
-    min-width: 0;
-  }
+.theme-detail-actions .secondary-button {
+  flex: 1 1 130px;
+  max-width: 150px;
+  min-width: 0;
+}
 
   .calendar-navigation {
     align-self: stretch;
@@ -3085,6 +3098,10 @@ h1 {
 
   .theme-item-row,
   .theme-item-row.single-catalog-item-row {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-section-actions {
     grid-template-columns: 1fr;
   }
 
