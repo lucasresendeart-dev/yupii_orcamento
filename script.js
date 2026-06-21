@@ -271,13 +271,15 @@ const shareQuotePdf = document.querySelector("#shareQuotePdf");
 let activePdfQuote = null;
 const catalogListView = document.querySelector("#catalogListView");
 const catalogFormView = document.querySelector("#catalogFormView");
-const newThemeButtons = document.querySelectorAll("#newThemeButton, #emptyNewThemeButton");
+const newThemeButtons = document.querySelectorAll("#newThemeButton");
 const newCatalogItemButton = document.querySelector("#newCatalogItemButton");
+const emptyNewThemeButton = document.querySelector("#emptyNewThemeButton");
 const backCatalogButtons = document.querySelectorAll(".back-catalog");
 const themeSearch = document.querySelector("#themeSearch");
 const themeCount = document.querySelector("#themeCount");
 const themesList = document.querySelector("#themesList");
 const emptyThemes = document.querySelector("#emptyThemes");
+const catalogTabs = document.querySelectorAll("[data-catalog-tab]");
 const themeForm = document.querySelector("#themeForm");
 const themeFormEyebrow = document.querySelector("#themeFormEyebrow");
 const themeFormTitle = document.querySelector("#themeFormTitle");
@@ -317,6 +319,7 @@ const agendaDetailsContent = document.querySelector("#agendaDetailsContent");
 const closeAgendaDetails = document.querySelector("#closeAgendaDetails");
 let editingThemeId = null;
 let catalogFormMode = "package";
+let activeCatalogTab = "package";
 let editingQuoteId = null;
 let visibleCalendarDate = new Date();
 let pendingSignalReversalId = null;
@@ -473,7 +476,12 @@ newClientButtons.forEach((button) => button.addEventListener("click", showClient
 backClientsButtons.forEach((button) => button.addEventListener("click", showClientList));
 newThemeButtons.forEach((button) => button.addEventListener("click", () => showThemeForm(null, "package")));
 newCatalogItemButton.addEventListener("click", () => showThemeForm(null, "single"));
+emptyNewThemeButton.addEventListener("click", () => showThemeForm(null, activeCatalogTab));
 backCatalogButtons.forEach((button) => button.addEventListener("click", showCatalogList));
+catalogTabs.forEach((button) => button.addEventListener("click", () => {
+  activeCatalogTab = button.dataset.catalogTab;
+  renderThemes(themeSearch.value);
+}));
 themeSearch.addEventListener("input", () => renderThemes(themeSearch.value));
 themesList.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit-theme]");
@@ -591,12 +599,25 @@ function catalogKindLabel(theme) {
 }
 
 function renderThemes(query = "") {
+  catalogTabs.forEach((button) => {
+    const active = button.dataset.catalogTab === activeCatalogTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  const showingSingles = activeCatalogTab === "single";
   const normalized = query.toLocaleLowerCase("pt-BR").trim();
   const themes = getThemes().filter((theme) => {
+    if (showingSingles !== isCatalogSingle(theme)) return false;
     const itemsText = (theme.items || []).map((item) => item.name).join(" ");
     return !normalized || [theme.themeName, theme.packageName, catalogKindLabel(theme), itemsText].join(" ").toLocaleLowerCase("pt-BR").includes(normalized);
   });
-  themeCount.textContent = `${themes.length} ${themes.length === 1 ? "cadastro" : "cadastros"}`;
+  const singular = showingSingles ? "item avulso" : "pacote";
+  const plural = showingSingles ? "itens avulsos" : "pacotes";
+  themeCount.textContent = `${themes.length} ${themes.length === 1 ? singular : plural}`;
+  emptyThemes.querySelector("strong").textContent = showingSingles ? "Nenhum item avulso cadastrado" : "Nenhum pacote cadastrado";
+  emptyThemes.querySelector("p").textContent = showingSingles ? "Cadastre itens como painel ornamentado, kit de balões e mobiliário." : "Cadastre os pacotes oferecidos pela Yupii.";
+  emptyNewThemeButton.innerHTML = `<span data-icon="plus"></span> ${showingSingles ? "Cadastrar item avulso" : "Cadastrar pacote"}`;
+  addIcons(emptyNewThemeButton);
   emptyThemes.hidden = themes.length > 0 || Boolean(query.trim());
   themesList.innerHTML = themes.map((theme) => {
     const items = theme.items || [];

@@ -1776,21 +1776,53 @@ button {
   display: grid;
 }
 
+.catalog-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  margin: 20px 22px 0;
+  background: #fdfbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.catalog-tab {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.catalog-tab.active {
+  color: var(--pink-700);
+  background: var(--white);
+  box-shadow: 0 8px 18px rgba(67, 47, 54, 0.08);
+}
+
 .catalog-heading-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(158px, 1fr));
   gap: 10px;
+  width: min(100%, 332px);
 }
 
 .catalog-heading-actions .primary-button,
 .catalog-heading-actions .secondary-button {
-  min-width: 158px;
+  width: 100%;
+  min-width: 0;
+  padding-inline: 14px;
 }
 
 .theme-row {
   display: grid;
   grid-template-columns: minmax(220px, 1.3fr) minmax(140px, 0.7fr) 130px 100px 32px;
+  min-width: 0;
   align-items: center;
   gap: 16px;
   padding: 16px 22px;
@@ -1887,7 +1919,8 @@ button {
 
 .theme-item-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 110px 75px 120px 30px;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 110px) minmax(64px, 75px) minmax(100px, 120px) 30px;
+  min-width: 0;
   align-items: center;
   gap: 9px;
   padding: 9px;
@@ -1897,7 +1930,7 @@ button {
 }
 
 .theme-item-row.single-catalog-item-row {
-  grid-template-columns: minmax(130px, 1fr) 90px 140px 30px;
+  grid-template-columns: minmax(96px, 1fr) minmax(64px, 90px) minmax(96px, 140px) 30px;
 }
 
 .theme-item-row input,
@@ -2700,6 +2733,10 @@ h1 {
     flex-direction: column;
   }
 
+  .catalog-heading-actions {
+    width: 100%;
+  }
+
   .person-type,
   .form-grid,
   .form-grid.two-columns,
@@ -2892,8 +2929,21 @@ h1 {
     grid-template-columns: 1fr 1fr;
   }
 
+  .theme-item-row.single-catalog-item-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .theme-item-row .theme-item-name {
     grid-column: 1 / -1;
+  }
+
+  .theme-detail-actions {
+    justify-content: stretch;
+  }
+
+  .theme-detail-actions .secondary-button {
+    flex: 1 1 130px;
+    min-width: 0;
   }
 
   .calendar-navigation {
@@ -3025,6 +3075,19 @@ h1 {
 }
 
 @media (max-width: 520px) {
+  .catalog-tabs {
+    margin-inline: 14px;
+  }
+
+  .catalog-heading-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-item-row,
+  .theme-item-row.single-catalog-item-row {
+    grid-template-columns: 1fr;
+  }
+
   .quote-management-row {
     grid-template-columns: minmax(0, 1fr);
   }
