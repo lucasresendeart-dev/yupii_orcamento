@@ -1237,6 +1237,12 @@ button {
   padding: 0 5px;
 }
 
+.quote-package-title {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .quote-package-header strong {
   font-size: 11px;
   color: var(--pink-700);
@@ -1245,6 +1251,27 @@ button {
 .quote-package-header span {
   font-size: 9px;
   color: var(--muted);
+}
+
+.remove-quote-package {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--pink-700);
+  background: var(--white);
+  border: 1px solid var(--pink-100);
+  border-radius: 9px;
+}
+
+.remove-quote-package:hover {
+  background: var(--pink-100);
+}
+
+.remove-quote-package svg {
+  width: 14px;
+  height: 14px;
 }
 
 .quote-item-row.package-discount-row {
@@ -1749,6 +1776,18 @@ button {
   display: grid;
 }
 
+.catalog-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.catalog-heading-actions .primary-button,
+.catalog-heading-actions .secondary-button {
+  min-width: 158px;
+}
+
 .theme-row {
   display: grid;
   grid-template-columns: minmax(220px, 1.3fr) minmax(140px, 0.7fr) 130px 100px 32px;
@@ -1820,6 +1859,8 @@ button {
 
 .theme-detail-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: flex-end;
 }
 
@@ -1853,6 +1894,10 @@ button {
   background: #fdfbfc;
   border: 1px solid var(--line);
   border-radius: 12px;
+}
+
+.theme-item-row.single-catalog-item-row {
+  grid-template-columns: minmax(130px, 1fr) 90px 140px 30px;
 }
 
 .theme-item-row input,

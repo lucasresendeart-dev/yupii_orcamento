@@ -54,6 +54,11 @@ async function removeClient(id) {
   clientsCache = clientsCache.filter((c) => String(c.id) !== String(id));
 }
 
+async function removeTheme(id) {
+  await apiDelete("themes", id);
+  themesCache = themesCache.filter((t) => String(t.id) !== String(id));
+}
+
 async function saveTheme(theme) {
   const saved = await apiSave("themes", theme);
   const i = themesCache.findIndex((t) => String(t.id) === String(saved.id));
@@ -94,6 +99,7 @@ const icons = {
   down: '<path d="m6 9 6 6 6-6"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><rect x="3" y="3" width="12" height="12" rx="2"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -266,15 +272,26 @@ let activePdfQuote = null;
 const catalogListView = document.querySelector("#catalogListView");
 const catalogFormView = document.querySelector("#catalogFormView");
 const newThemeButtons = document.querySelectorAll("#newThemeButton, #emptyNewThemeButton");
+const newCatalogItemButton = document.querySelector("#newCatalogItemButton");
 const backCatalogButtons = document.querySelectorAll(".back-catalog");
 const themeSearch = document.querySelector("#themeSearch");
 const themeCount = document.querySelector("#themeCount");
 const themesList = document.querySelector("#themesList");
 const emptyThemes = document.querySelector("#emptyThemes");
 const themeForm = document.querySelector("#themeForm");
+const themeFormEyebrow = document.querySelector("#themeFormEyebrow");
 const themeFormTitle = document.querySelector("#themeFormTitle");
+const themeFormDescription = document.querySelector("#themeFormDescription");
 const themeItems = document.querySelector("#themeItems");
 const addThemeItemButton = document.querySelector("#addThemeItem");
+const catalogIdentityTitle = document.querySelector("#catalogIdentityTitle");
+const catalogIdentityHelp = document.querySelector("#catalogIdentityHelp");
+const themeNameLabel = document.querySelector("#themeNameLabel");
+const packageNameField = document.querySelector("#packageNameField");
+const packageDiscountField = document.querySelector("#packageDiscountField");
+const packagePriceLabel = document.querySelector("#packagePriceLabel");
+const catalogItemsTitle = document.querySelector("#catalogItemsTitle");
+const catalogItemsHelp = document.querySelector("#catalogItemsHelp");
 const calendarGrid = document.querySelector("#calendarGrid");
 const calendarMonth = document.querySelector("#calendarMonth");
 const previousMonth = document.querySelector("#previousMonth");
@@ -283,6 +300,7 @@ const confirmModal = document.querySelector("#confirmModal");
 const cancelConfirm = document.querySelector("#cancelConfirm");
 const approveConfirm = document.querySelector("#approveConfirm");
 const deleteClientModal = document.querySelector("#deleteClientModal");
+const deleteClientTitle = document.querySelector("#deleteClientTitle");
 const cancelDeleteClient = document.querySelector("#cancelDeleteClient");
 const confirmDeleteClient = document.querySelector("#confirmDeleteClient");
 const deleteClientMessage = document.querySelector("#deleteClientMessage");
@@ -298,10 +316,12 @@ const agendaDetailsModal = document.querySelector("#agendaDetailsModal");
 const agendaDetailsContent = document.querySelector("#agendaDetailsContent");
 const closeAgendaDetails = document.querySelector("#closeAgendaDetails");
 let editingThemeId = null;
+let catalogFormMode = "package";
 let editingQuoteId = null;
 let visibleCalendarDate = new Date();
 let pendingSignalReversalId = null;
 let pendingDeleteClientId = null;
+let pendingDeleteThemeId = null;
 let pendingQuoteAction = null;
 
 function clientInitials(name) {
@@ -451,13 +471,24 @@ pageLinks.forEach((link) => link.addEventListener("click", (event) => {
 backHomeButtons.forEach((button) => button.addEventListener("click", () => showPage("home")));
 newClientButtons.forEach((button) => button.addEventListener("click", showClientForm));
 backClientsButtons.forEach((button) => button.addEventListener("click", showClientList));
-newThemeButtons.forEach((button) => button.addEventListener("click", () => showThemeForm()));
+newThemeButtons.forEach((button) => button.addEventListener("click", () => showThemeForm(null, "package")));
+newCatalogItemButton.addEventListener("click", () => showThemeForm(null, "single"));
 backCatalogButtons.forEach((button) => button.addEventListener("click", showCatalogList));
 themeSearch.addEventListener("input", () => renderThemes(themeSearch.value));
 themesList.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit-theme]");
   if (editButton) {
     showThemeForm(editButton.dataset.editTheme);
+    return;
+  }
+  const cloneButton = event.target.closest("[data-clone-theme]");
+  if (cloneButton) {
+    cloneTheme(cloneButton.dataset.cloneTheme);
+    return;
+  }
+  const deleteButton = event.target.closest("[data-delete-theme]");
+  if (deleteButton) {
+    openDeleteThemeModal(deleteButton.dataset.deleteTheme);
     return;
   }
   const row = event.target.closest(".theme-row");
@@ -484,23 +515,30 @@ document.querySelector("#packageDiscount").addEventListener("input", updateTheme
 themeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   updateThemePackageTotal();
+  const isSingle = catalogFormMode === "single";
+  let items = [...themeItems.querySelectorAll(".theme-item-row")].map((row) => ({
+    name: row.querySelector(".theme-item-name").value,
+    type: row.querySelector(".theme-item-type").value,
+    quantity: Number(row.querySelector(".theme-item-quantity").value) || 1,
+    price: parseMoney(row.querySelector(".theme-item-price").value),
+  }));
+  if (isSingle && items[0]) {
+    items = [{ ...items[0], name: document.querySelector("#themeName").value, quantity: 1 }];
+  }
   const theme = {
     id: editingThemeId || createId(),
+    catalogType: catalogFormMode,
     themeName: document.querySelector("#themeName").value,
-    packageName: document.querySelector("#packageName").value,
-    packageDiscount: parseMoney(document.querySelector("#packageDiscount").value),
+    packageName: isSingle ? "Item avulso" : document.querySelector("#packageName").value,
+    packageDiscount: isSingle ? 0 : parseMoney(document.querySelector("#packageDiscount").value),
     packagePrice: parseMoney(document.querySelector("#packagePrice").value),
     themeDescription: document.querySelector("#themeDescription").value,
-    items: [...themeItems.querySelectorAll(".theme-item-row")].map((row) => ({
-      name: row.querySelector(".theme-item-name").value,
-      type: row.querySelector(".theme-item-type").value,
-      quantity: Number(row.querySelector(".theme-item-quantity").value) || 1,
-      price: parseMoney(row.querySelector(".theme-item-price").value),
-    })),
+    items,
   };
   await saveTheme(theme);
   editingThemeId = null;
-  toast.textContent = "Tema salvo com sucesso.";
+  catalogFormMode = "package";
+  toast.textContent = isSingle ? "Item avulso salvo com sucesso." : "Pacote salvo com sucesso.";
   toast.classList.add("visible");
   window.setTimeout(() => toast.classList.remove("visible"), 2800);
   showCatalogList();
@@ -544,25 +582,45 @@ function getThemes() {
   return themesCache;
 }
 
+function isCatalogSingle(theme) {
+  return theme.catalogType === "single";
+}
+
+function catalogKindLabel(theme) {
+  return isCatalogSingle(theme) ? "Item avulso" : "Pacote";
+}
+
 function renderThemes(query = "") {
   const normalized = query.toLocaleLowerCase("pt-BR").trim();
-  const themes = getThemes().filter((theme) => !normalized || [theme.themeName, theme.packageName].join(" ").toLocaleLowerCase("pt-BR").includes(normalized));
-  themeCount.textContent = `${themes.length} ${themes.length === 1 ? "pacote" : "pacotes"}`;
+  const themes = getThemes().filter((theme) => {
+    const itemsText = (theme.items || []).map((item) => item.name).join(" ");
+    return !normalized || [theme.themeName, theme.packageName, catalogKindLabel(theme), itemsText].join(" ").toLocaleLowerCase("pt-BR").includes(normalized);
+  });
+  themeCount.textContent = `${themes.length} ${themes.length === 1 ? "cadastro" : "cadastros"}`;
   emptyThemes.hidden = themes.length > 0 || Boolean(query.trim());
-  themesList.innerHTML = themes.map((theme) => `
+  themesList.innerHTML = themes.map((theme) => {
+    const items = theme.items || [];
+    const isSingle = isCatalogSingle(theme);
+    return `
     <article class="theme-row" data-theme-id="${theme.id}" tabindex="0">
-      <div class="theme-main"><strong>${escapeHtml(theme.themeName)}</strong><span>${escapeHtml(theme.packageName)}</span></div>
-      <div class="theme-detail"><span>Desconto</span><strong>${currency(theme.packageDiscount || 0)}</strong></div>
-      <div class="theme-detail"><span>Itens inclusos</span><strong>${theme.items.length} itens</strong></div>
+      <div class="theme-main"><strong>${escapeHtml(theme.themeName)}</strong><span>${escapeHtml(isSingle ? "Item avulso" : theme.packageName)}</span></div>
+      <div class="theme-detail"><span>Tipo</span><strong>${catalogKindLabel(theme)}</strong></div>
+      <div class="theme-detail"><span>${isSingle ? "Quantidade" : "Itens inclusos"}</span><strong>${isSingle ? "1 item" : `${items.length} itens`}</strong></div>
       <strong class="theme-price">${currency(theme.packagePrice)}</strong>
       <span class="client-expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.down}</svg></span>
     </article>
     <div class="theme-details-panel" data-theme-details="${theme.id}" hidden>
       ${theme.themeDescription ? `<div class="client-detail-item"><span>Descrição</span><strong>${escapeHtml(theme.themeDescription)}</strong></div>` : ""}
-      <div class="theme-included-list">${theme.items.map((item) => `<span class="theme-included-item">${escapeHtml(item.name)} · ${item.quantity}x · ${currency(item.price)}</span>`).join("")}</div>
-      <div class="theme-detail-actions"><button class="secondary-button theme-edit-button" type="button" data-edit-theme="${theme.id}">Editar pacote</button></div>
+      <div class="theme-included-list">${items.map((item) => `<span class="theme-included-item">${escapeHtml(item.name)} · ${item.quantity}x · ${currency(item.price)}</span>`).join("")}</div>
+      <div class="theme-detail-actions">
+        <button class="secondary-button theme-edit-button" type="button" data-edit-theme="${theme.id}"><span data-icon="edit"></span> Editar</button>
+        <button class="secondary-button theme-edit-button" type="button" data-clone-theme="${theme.id}"><span data-icon="copy"></span> Clonar</button>
+        <button class="secondary-button danger-text-button" type="button" data-delete-theme="${theme.id}"><span data-icon="trash"></span> Excluir</button>
+      </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
+  addIcons(themesList);
 }
 
 function showCatalogList() {
@@ -581,35 +639,80 @@ function addThemeItem(data = {}) {
     <input class="theme-item-price" inputmode="decimal" placeholder="Valor individual" value="${data.price ? String(data.price).replace(".", ",") : ""}" />
     <button class="remove-quote-item remove-theme-item" type="button" aria-label="Remover item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.trash}</svg></button>
   `;
+  const nameInput = row.querySelector(".theme-item-name");
+  if (catalogFormMode === "single") {
+    row.classList.add("single-catalog-item-row");
+    nameInput.required = false;
+    nameInput.value = data.name || document.querySelector("#themeName").value || "";
+    nameInput.hidden = true;
+  }
   if (data.type) row.querySelector(".theme-item-type").value = data.type;
   themeItems.appendChild(row);
   updateThemePackageTotal();
 }
 
-function showThemeForm(themeId = null) {
+function configureCatalogForm(mode) {
+  const isSingle = mode === "single";
+  catalogFormMode = mode;
+  themeFormEyebrow.textContent = isSingle ? "Item avulso" : "Pacote de festa";
+  themeFormTitle.textContent = isSingle ? (editingThemeId ? "Editar item avulso" : "Novo item avulso") : (editingThemeId ? "Editar pacote" : "Novo pacote");
+  themeFormDescription.textContent = isSingle ? "Cadastre itens soltos como painel ornamentado, kit de balões ou mobiliário." : "Defina o pacote e os itens que poderão entrar no orçamento.";
+  catalogIdentityTitle.textContent = isSingle ? "Identificação do item" : "Identificação do pacote";
+  catalogIdentityHelp.textContent = isSingle ? "Ex.: Painel ornamentado, kit de balões, mesa cilíndrica." : "Ex.: Batismo · Completo ou Fazendinha · Simples.";
+  themeNameLabel.textContent = isSingle ? "Nome do item" : "Tema da festa";
+  document.querySelector("#themeName").placeholder = isSingle ? "Ex.: Painel ornamentado" : "Ex.: Batismo";
+  packageNameField.hidden = isSingle;
+  packageDiscountField.hidden = isSingle;
+  document.querySelector("#packageName").required = !isSingle;
+  packagePriceLabel.textContent = isSingle ? "Valor do item" : "Valor do pacote";
+  catalogItemsTitle.textContent = isSingle ? "Dados do item" : "Itens e serviços inclusos";
+  catalogItemsHelp.textContent = isSingle ? "Informe tipo, quantidade e valor para reutilizar nos orçamentos." : "Os valores individuais poderão ser ajustados no orçamento.";
+  addThemeItemButton.hidden = isSingle;
+}
+
+function showThemeForm(themeId = null, mode = "package", cloneData = null) {
   editingThemeId = themeId;
   catalogListView.hidden = true;
   catalogFormView.hidden = false;
   themeForm.reset();
   themeItems.innerHTML = "";
-  themeFormTitle.textContent = themeId ? "Editar tema" : "Novo tema";
-  if (themeId) {
-    const theme = getThemes().find((item) => String(item.id) === String(themeId));
-    if (theme) {
-      document.querySelector("#themeName").value = theme.themeName;
-      document.querySelector("#packageName").value = theme.packageName;
-      document.querySelector("#themeDescription").value = theme.themeDescription || "";
-      theme.items.forEach(addThemeItem);
-      const itemsSum = themeItemsTotal();
-      const legacyDiscount = Math.max(0, itemsSum - Number(theme.packagePrice || 0));
-      document.querySelector("#packageDiscount").value = String(theme.packageDiscount ?? legacyDiscount).replace(".", ",");
-      updateThemePackageTotal();
-    }
+  const sourceTheme = cloneData || (themeId ? getThemes().find((item) => String(item.id) === String(themeId)) : null);
+  configureCatalogForm(sourceTheme ? (sourceTheme.catalogType || "package") : mode);
+  if (sourceTheme) {
+    if (!cloneData) editingThemeId = sourceTheme.id;
+    if (cloneData) themeFormTitle.textContent = isCatalogSingle(sourceTheme) ? "Clonar item avulso" : "Clonar pacote";
+    document.querySelector("#themeName").value = sourceTheme.themeName;
+    document.querySelector("#packageName").value = cloneData && !isCatalogSingle(sourceTheme) ? `${sourceTheme.packageName || ""} - cópia` : sourceTheme.packageName || "";
+    document.querySelector("#themeDescription").value = sourceTheme.themeDescription || "";
+    (sourceTheme.items || []).forEach(addThemeItem);
+    const itemsSum = themeItemsTotal();
+    const legacyDiscount = Math.max(0, itemsSum - Number(sourceTheme.packagePrice || 0));
+    document.querySelector("#packageDiscount").value = String(sourceTheme.packageDiscount ?? legacyDiscount).replace(".", ",");
+    updateThemePackageTotal();
   } else {
     addThemeItem();
     document.querySelector("#packageDiscount").value = "0,00";
     updateThemePackageTotal();
   }
+}
+
+function cloneTheme(themeId) {
+  const theme = getThemes().find((item) => String(item.id) === String(themeId));
+  if (!theme) return;
+  const clone = JSON.parse(JSON.stringify(theme));
+  delete clone.id;
+  showThemeForm(null, clone.catalogType || "package", clone);
+}
+
+function openDeleteThemeModal(themeId) {
+  const theme = getThemes().find((item) => String(item.id) === String(themeId));
+  if (!theme) return;
+  pendingDeleteThemeId = themeId;
+  pendingDeleteClientId = null;
+  deleteClientTitle.textContent = `Excluir ${isCatalogSingle(theme) ? "item avulso" : "pacote"}?`;
+  deleteClientMessage.textContent = `Tem certeza que deseja excluir ${theme.themeName}? Esta ação não pode ser desfeita.`;
+  confirmDeleteClient.textContent = "Sim, excluir";
+  deleteClientModal.hidden = false;
 }
 
 function renderCalendar() {
@@ -864,6 +967,7 @@ function showQuoteForm(quoteId = null) {
   quoteItems.innerHTML = "";
   quoteDiscount.value = "0,00";
   quoteDiscountType.value = "amount";
+  quoteDiscountType.dataset.previous = "amount";
   quoteDelivery.value = "0,00";
   quoteDepositPercent.value = "50";
 
@@ -890,6 +994,7 @@ function showQuoteForm(quoteId = null) {
       }
       quoteDiscount.value = quote.discount ? String(quote.discount).replace(".", ",") : "0,00";
       quoteDiscountType.value = quote.discountType || "amount";
+      quoteDiscountType.dataset.previous = quoteDiscountType.value;
       quoteDelivery.value = quote.delivery ? String(quote.delivery).replace(".", ",") : "0,00";
       quoteDepositPercent.value = quote.depositPercent || 50;
       (quote.items || []).forEach((item) => addQuoteItem(item));
@@ -1045,14 +1150,52 @@ function quoteDiscountAmount(subtotal, value = quoteDiscount.value, type = quote
   return Math.min(subtotal, Math.max(0, parsed));
 }
 
-function applyPackageDiscountToQuote(amount) {
-  if (!amount || amount <= 0) return;
-  const currentSubtotal = [...quoteItems.querySelectorAll(".quote-item-row")].reduce((total, row) => {
+function quoteItemsSubtotal() {
+  return [...quoteItems.querySelectorAll(".quote-item-row")].reduce((total, row) => {
     return total + (Number(row.querySelector(".item-quantity").value) || 0) * parseMoney(row.querySelector(".item-price").value);
   }, 0);
+}
+
+function formatDiscountInput(value, type) {
+  const safeValue = Math.max(0, Number(value) || 0);
+  if (type === "percent") {
+    return String(Math.round(safeValue * 100) / 100).replace(".", ",");
+  }
+  return currency(safeValue).replace("R$", "").trim();
+}
+
+function convertQuoteDiscountType() {
+  const newType = quoteDiscountType.value;
+  const previousType = quoteDiscountType.dataset.previous || "amount";
+  if (newType === previousType) {
+    updateQuoteTotals();
+    return;
+  }
+  const subtotal = quoteItemsSubtotal();
+  const currentDiscountAmount = quoteDiscountAmount(subtotal, quoteDiscount.value, previousType);
+  const convertedValue = newType === "percent" && subtotal > 0
+    ? currentDiscountAmount / subtotal * 100
+    : currentDiscountAmount;
+  quoteDiscount.value = formatDiscountInput(convertedValue, newType);
+  quoteDiscountType.dataset.previous = newType;
+  updateQuoteTotals();
+}
+
+function applyPackageDiscountToQuote(amount) {
+  if (!amount || amount <= 0) return;
+  const currentSubtotal = quoteItemsSubtotal();
   const currentDiscount = quoteDiscountAmount(currentSubtotal);
   quoteDiscountType.value = "amount";
+  quoteDiscountType.dataset.previous = "amount";
   quoteDiscount.value = String(currentDiscount + amount).replace(".", ",");
+}
+
+function removePackageDiscountFromQuote(amount) {
+  if (!amount || amount <= 0) return;
+  const currentDiscount = quoteDiscountAmount(quoteItemsSubtotal());
+  quoteDiscountType.value = "amount";
+  quoteDiscountType.dataset.previous = "amount";
+  quoteDiscount.value = String(Math.max(0, currentDiscount - amount)).replace(".", ",");
 }
 
 function addQuoteItem(data = {}, container = quoteItems) {
@@ -1093,24 +1236,26 @@ function renderPackagePicker() {
   const themes = getThemes();
   emptyPackagePicker.hidden = themes.length > 0;
   packagePickerList.innerHTML = themes.map((theme) => {
-    const itemsSum = (theme.items || []).reduce((total, item) => total + Number(item.quantity || 0) * Number(item.price || 0), 0);
+    const items = theme.items || [];
+    const isSingle = isCatalogSingle(theme);
+    const itemsSum = items.reduce((total, item) => total + Number(item.quantity || 0) * Number(item.price || 0), 0);
     const savings = itemsSum - Number(theme.packagePrice || 0);
     return `
       <div class="package-picker-item" data-package-item="${theme.id}">
         <div class="package-picker-row" data-package-toggle="${theme.id}">
           <div class="package-picker-main">
             <strong>${escapeHtml(theme.themeName)}</strong>
-            <span>${escapeHtml(theme.packageName)}</span>
+            <span>${escapeHtml(isSingle ? "Item avulso" : theme.packageName)}</span>
           </div>
-          <div class="package-picker-count">${(theme.items || []).length} ${(theme.items || []).length === 1 ? "item incluso" : "itens inclusos"}</div>
+          <div class="package-picker-count">${isSingle ? "Item avulso" : `${items.length} ${items.length === 1 ? "item incluso" : "itens inclusos"}`}</div>
           <strong class="package-picker-price">${currency(theme.packagePrice)}</strong>
           <span class="client-expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.down}</svg></span>
         </div>
         <div class="package-picker-details">
           ${theme.themeDescription ? `<div class="client-detail-item"><span>Descrição</span><strong>${escapeHtml(theme.themeDescription)}</strong></div>` : ""}
-          <div class="theme-included-list">${(theme.items || []).map((item) => `<span class="theme-included-item">${escapeHtml(item.name)} · ${item.quantity}x · ${currency(item.price)}</span>`).join("")}</div>
-          ${savings > 0 ? `<span class="package-picker-savings">Economia de ${currency(savings)} em relação à soma dos itens (${currency(itemsSum)}).</span>` : ""}
-          <button class="primary-button package-picker-add" type="button" data-package-add="${theme.id}"><span data-icon="plus"></span> Adicionar ao orçamento</button>
+          <div class="theme-included-list">${items.map((item) => `<span class="theme-included-item">${escapeHtml(item.name)} · ${item.quantity}x · ${currency(item.price)}</span>`).join("")}</div>
+          ${!isSingle && savings > 0 ? `<span class="package-picker-savings">Economia de ${currency(savings)} em relação à soma dos itens (${currency(itemsSum)}).</span>` : ""}
+          <button class="primary-button package-picker-add" type="button" data-package-add="${theme.id}"><span data-icon="plus"></span> ${isSingle ? "Adicionar item" : "Adicionar ao orçamento"}</button>
         </div>
       </div>
     `;
@@ -1135,13 +1280,33 @@ function addPackageToQuote(themeId) {
   const theme = getThemes().find((item) => String(item.id) === String(themeId));
   if (!theme) return;
 
+  if (isCatalogSingle(theme)) {
+    const item = (theme.items || [])[0] || {};
+    addQuoteItem({
+      description: item.name || theme.themeName,
+      type: item.type || "Locação",
+      quantity: item.quantity || 1,
+      price: item.price ?? theme.packagePrice,
+    });
+    toast.textContent = "Item avulso adicionado ao orçamento.";
+    toast.classList.add("visible");
+    window.setTimeout(() => toast.classList.remove("visible"), 2800);
+    return;
+  }
+
   const group = document.createElement("div");
   group.className = "quote-package-group";
   group.dataset.packageGroup = theme.id;
+  const packageItemsSum = (theme.items || []).reduce((total, item) => total + Number(item.quantity || 0) * Number(item.price || 0), 0);
+  const packageDiscount = Math.max(0, packageItemsSum - Number(theme.packagePrice || 0));
+  group.dataset.packageDiscount = String(packageDiscount);
   group.innerHTML = `
     <div class="quote-package-header">
-      <strong><span data-icon="box"></span> ${escapeHtml(theme.themeName)} · ${escapeHtml(theme.packageName)}</strong>
-      <span>Pacote do catálogo · ${currency(theme.packagePrice)}</span>
+      <div class="quote-package-title">
+        <strong><span data-icon="box"></span> ${escapeHtml(theme.themeName)} · ${escapeHtml(theme.packageName)}</strong>
+        <span>Pacote do catálogo · ${currency(theme.packagePrice)}</span>
+      </div>
+      <button class="remove-quote-package" type="button" aria-label="Remover pacote inteiro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons.trash}</svg></button>
     </div>
   `;
   group.querySelector("[data-icon]").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons.box}</svg>`;
@@ -1153,8 +1318,7 @@ function addPackageToQuote(themeId) {
     itemsSum += Number(item.quantity || 0) * Number(item.price || 0);
   });
 
-  const savings = itemsSum - Number(theme.packagePrice || 0);
-  applyPackageDiscountToQuote(savings);
+  applyPackageDiscountToQuote(packageDiscount);
 
   updateQuoteTotals();
   toast.textContent = "Pacote adicionado ao orçamento.";
@@ -1460,6 +1624,9 @@ confirmModal.addEventListener("click", (event) => {
 
 function closeDeleteClientModal() {
   pendingDeleteClientId = null;
+  pendingDeleteThemeId = null;
+  deleteClientTitle.textContent = "Excluir cliente?";
+  confirmDeleteClient.textContent = "Sim, excluir";
   deleteClientModal.hidden = true;
 }
 
@@ -1468,19 +1635,25 @@ deleteClientModal.addEventListener("click", (event) => {
   if (event.target === deleteClientModal) closeDeleteClientModal();
 });
 confirmDeleteClient.addEventListener("click", async () => {
-  if (!pendingDeleteClientId) return;
+  if (!pendingDeleteClientId && !pendingDeleteThemeId) return;
   try {
-    await removeClient(pendingDeleteClientId);
-    renderClients(clientSearch.value);
-    renderQuotes(quoteSearch.value);
-    renderHome();
-    renderCalendar();
-    toast.textContent = "Cliente excluído com sucesso.";
+    if (pendingDeleteThemeId) {
+      await removeTheme(pendingDeleteThemeId);
+      renderThemes(themeSearch.value);
+      toast.textContent = "Cadastro excluído com sucesso.";
+    } else {
+      await removeClient(pendingDeleteClientId);
+      renderClients(clientSearch.value);
+      renderQuotes(quoteSearch.value);
+      renderHome();
+      renderCalendar();
+      toast.textContent = "Cliente excluído com sucesso.";
+    }
     toast.classList.add("visible");
     window.setTimeout(() => toast.classList.remove("visible"), 2800);
   } catch (error) {
     console.error(error);
-    toast.textContent = "Não foi possível excluir o cliente.";
+    toast.textContent = pendingDeleteThemeId ? "Não foi possível excluir este cadastro." : "Não foi possível excluir o cliente.";
     toast.classList.add("visible");
     window.setTimeout(() => toast.classList.remove("visible"), 2800);
   }
@@ -1609,6 +1782,14 @@ pdfChoiceModal.addEventListener("click", (event) => {
 });
 quoteItems.addEventListener("input", updateQuoteTotals);
 quoteItems.addEventListener("click", (event) => {
+  const packageButton = event.target.closest(".remove-quote-package");
+  if (packageButton) {
+    const group = packageButton.closest(".quote-package-group");
+    removePackageDiscountFromQuote(parseMoney(group.dataset.packageDiscount));
+    group.remove();
+    updateQuoteTotals();
+    return;
+  }
   const removeButton = event.target.closest(".remove-quote-item");
   if (removeButton) {
     removeButton.closest(".quote-item-row").remove();
@@ -1616,7 +1797,7 @@ quoteItems.addEventListener("click", (event) => {
   }
 });
 [quoteDiscount, quoteDelivery, quoteDepositPercent].forEach((input) => input.addEventListener("input", updateQuoteTotals));
-quoteDiscountType.addEventListener("change", updateQuoteTotals);
+quoteDiscountType.addEventListener("change", convertQuoteDiscountType);
 cancelQuote.addEventListener("click", showQuoteList);
 
 quoteForm.addEventListener("submit", async (event) => {

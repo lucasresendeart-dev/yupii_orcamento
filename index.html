@@ -477,50 +477,53 @@
         <div class="page-view" id="catalogPage">
           <div id="catalogListView">
             <section class="page-heading">
-              <div><span class="eyebrow">Pacotes de festa</span><h1>Catálogo</h1><p>Organize temas, versões e tudo que está incluso em cada pacote.</p></div>
-              <button class="primary-button" id="newThemeButton" type="button"><span data-icon="plus"></span> Novo tema</button>
+              <div><span class="eyebrow">Pacotes e itens</span><h1>Catálogo</h1><p>Organize temas, versões, pacotes e itens avulsos que entram nos orçamentos.</p></div>
+              <div class="catalog-heading-actions">
+                <button class="secondary-button" id="newCatalogItemButton" type="button"><span data-icon="plus"></span> Novo item avulso</button>
+                <button class="primary-button" id="newThemeButton" type="button"><span data-icon="plus"></span> Novo pacote</button>
+              </div>
             </section>
             <section class="panel clients-panel">
               <div class="clients-toolbar">
-                <label class="client-search"><span data-icon="search"></span><input id="themeSearch" type="search" placeholder="Buscar por tema, categoria ou pacote" /></label>
+                <label class="client-search"><span data-icon="search"></span><input id="themeSearch" type="search" placeholder="Buscar por tema, pacote ou item avulso" /></label>
                 <span class="client-count" id="themeCount">0 pacotes</span>
               </div>
               <div id="themesList" class="themes-list"></div>
               <div class="empty-clients" id="emptyThemes">
                 <span class="empty-icon"><span data-icon="box"></span></span>
-                <strong>Nenhum tema cadastrado</strong>
-                <p>Cadastre os pacotes oferecidos pela Yupii.</p>
-                <button class="secondary-button" id="emptyNewThemeButton" type="button"><span data-icon="plus"></span> Cadastrar tema</button>
+                <strong>Nenhum item cadastrado</strong>
+                <p>Cadastre pacotes e itens avulsos oferecidos pela Yupii.</p>
+                <button class="secondary-button" id="emptyNewThemeButton" type="button"><span data-icon="plus"></span> Cadastrar pacote</button>
               </div>
             </section>
           </div>
 
           <div id="catalogFormView" hidden>
             <section class="page-heading">
-              <div><span class="eyebrow">Pacote de festa</span><h1 id="themeFormTitle">Novo tema</h1><p>Defina o pacote e os itens que poderão entrar no orçamento.</p></div>
+              <div><span class="eyebrow" id="themeFormEyebrow">Pacote de festa</span><h1 id="themeFormTitle">Novo pacote</h1><p id="themeFormDescription">Defina o pacote e os itens que poderão entrar no orçamento.</p></div>
               <button class="text-button back-catalog" type="button"><span data-icon="arrow-left"></span> Voltar ao catálogo</button>
             </section>
             <form class="catalog-form" id="themeForm">
               <section class="panel quote-section">
-                <div class="section-title"><span class="step-number">1</span><div><strong>Identificação do pacote</strong><small>Ex.: Batismo · Completo ou Fazendinha · Simples.</small></div></div>
+                <div class="section-title"><span class="step-number">1</span><div><strong id="catalogIdentityTitle">Identificação do pacote</strong><small id="catalogIdentityHelp">Ex.: Batismo · Completo ou Fazendinha · Simples.</small></div></div>
                 <div class="quote-form-grid">
-                  <label class="field"><span>Tema da festa</span><input id="themeName" name="themeName" placeholder="Ex.: Batismo" required /></label>
-                  <label class="field"><span>Versão do pacote</span><input id="packageName" name="packageName" placeholder="Ex.: Simples ou Completo" required /></label>
-                  <label class="field"><span>Desconto do pacote</span><input id="packageDiscount" name="packageDiscount" inputmode="decimal" placeholder="0,00" value="0,00" /></label>
-                  <label class="field"><span>Valor do pacote</span><input id="packagePrice" name="packagePrice" inputmode="decimal" placeholder="0,00" readonly /></label>
+                  <label class="field"><span id="themeNameLabel">Tema da festa</span><input id="themeName" name="themeName" placeholder="Ex.: Batismo" required /></label>
+                  <label class="field" id="packageNameField"><span>Versão do pacote</span><input id="packageName" name="packageName" placeholder="Ex.: Simples ou Completo" required /></label>
+                  <label class="field" id="packageDiscountField"><span>Desconto do pacote</span><input id="packageDiscount" name="packageDiscount" inputmode="decimal" placeholder="0,00" value="0,00" /></label>
+                  <label class="field"><span id="packagePriceLabel">Valor do pacote</span><input id="packagePrice" name="packagePrice" inputmode="decimal" placeholder="0,00" readonly /></label>
                   <label class="field quote-notes"><span>Descrição <em>opcional</em></span><textarea id="themeDescription" name="themeDescription" rows="3" placeholder="Uma breve apresentação do pacote."></textarea></label>
                 </div>
               </section>
               <section class="panel quote-section">
                 <div class="quote-section-header">
-                  <div class="section-title"><span class="step-number">2</span><div><strong>Itens e serviços inclusos</strong><small>Os valores individuais poderão ser ajustados no orçamento.</small></div></div>
+                  <div class="section-title"><span class="step-number">2</span><div><strong id="catalogItemsTitle">Itens e serviços inclusos</strong><small id="catalogItemsHelp">Os valores individuais poderão ser ajustados no orçamento.</small></div></div>
                   <button class="secondary-button compact-button" id="addThemeItem" type="button"><span data-icon="plus"></span> Adicionar item</button>
                 </div>
                 <div class="theme-items" id="themeItems"></div>
               </section>
               <div class="form-actions catalog-actions">
                 <button class="secondary-button back-catalog" type="button">Cancelar</button>
-                <button class="primary-button" type="submit"><span data-icon="check"></span> Salvar tema</button>
+                <button class="primary-button" type="submit"><span data-icon="check"></span> Salvar cadastro</button>
               </div>
             </form>
           </div>
@@ -599,14 +602,14 @@
         <button class="modal-close" id="closePackagePicker" type="button" aria-label="Fechar">×</button>
         <div class="package-picker-header">
           <span class="eyebrow">Catálogo</span>
-          <h2 id="packagePickerTitle">Escolha um pacote</h2>
-          <p>Clique em um pacote para ver os itens inclusos e adicioná-lo ao orçamento.</p>
+          <h2 id="packagePickerTitle">Escolha um pacote ou item</h2>
+          <p>Clique em um cadastro para ver os detalhes e adicioná-lo ao orçamento.</p>
         </div>
         <div class="package-picker-list" id="packagePickerList"></div>
         <div class="empty-clients" id="emptyPackagePicker" hidden>
           <span class="empty-icon"><span data-icon="box"></span></span>
-          <strong>Nenhum pacote cadastrado</strong>
-          <p>Cadastre pacotes no Catálogo para adicioná-los aqui.</p>
+          <strong>Nenhum cadastro no catálogo</strong>
+          <p>Cadastre pacotes ou itens avulsos no Catálogo para adicioná-los aqui.</p>
         </div>
       </section>
     </div>
