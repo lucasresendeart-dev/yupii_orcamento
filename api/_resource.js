@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { verifyAuthHeader } from "./_auth.js";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,6 +19,10 @@ export function createResourceHandler(table) {
 
   return async function handler(req, res) {
     try {
+      if (!verifyAuthHeader(req.headers.authorization || "")) {
+        return res.status(401).json({ error: "Nao autorizado" });
+      }
+
       if (req.method === "GET") {
         const { rows } = await pool.query(`SELECT data FROM ${table} ORDER BY id`);
         return res.status(200).json(rows.map((r) => r.data));

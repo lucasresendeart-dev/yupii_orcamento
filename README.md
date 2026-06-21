@@ -22,6 +22,9 @@ Em **Environment**, configure:
 
 ```bash
 DATABASE_URL=sua_connection_string_do_neon
+APP_ADMIN_PASSWORD=sua_senha_admin
+APP_USER_PASSWORD=sua_senha_usuario
+AUTH_SESSION_SECRET=uma_chave_grande_aleatoria
 ```
 
 O comando `npm start` executa:
@@ -93,6 +96,5 @@ O modo local salva os dados em `.local-db.json`, que esta no `.gitignore`.
 
 - Nao suba `.env`, `.env.local` ou connection string para o GitHub.
 - O Render precisa da variavel `DATABASE_URL` para salvar dados no banco real.
-- Senhas atuais de acesso:
-  - Admin: `admin0910`
-  - Usuario: `0112`
+- As senhas de acesso devem ficar somente nas variaveis `APP_ADMIN_PASSWORD` e `APP_USER_PASSWORD`.
+- Use `AUTH_SESSION_SECRET` com uma chave longa e aleatoria para assinar as sessoes.

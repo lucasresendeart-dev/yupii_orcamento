@@ -5,8 +5,16 @@ function createId() {
   return Date.now() * 1000 + Math.floor(Math.random() * 1000);
 }
 
+function authHeaders(extra = {}) {
+  const token = sessionStorage.getItem("yupiiToken");
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
 async function apiGet(resource) {
-  const response = await fetch(`${API_BASE}/${resource}`);
+  const response = await fetch(`${API_BASE}/${resource}`, {
+    headers: authHeaders(),
+  });
+  if (response.status === 401) lockApp("Sessão expirada. Digite a senha novamente.");
   if (!response.ok) throw new Error(`Falha ao buscar ${resource}`);
   return response.json();
 }
@@ -14,16 +22,31 @@ async function apiGet(resource) {
 async function apiSave(resource, item) {
   const response = await fetch(`${API_BASE}/${resource}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(item),
   });
+  if (response.status === 401) lockApp("Sessão expirada. Digite a senha novamente.");
   if (!response.ok) throw new Error(`Falha ao salvar ${resource}`);
   return response.json();
 }
 
 async function apiDelete(resource, id) {
-  const response = await fetch(`${API_BASE}/${resource}?id=${id}`, { method: "DELETE" });
+  const response = await fetch(`${API_BASE}/${resource}?id=${id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (response.status === 401) lockApp("Sessão expirada. Digite a senha novamente.");
   if (!response.ok && response.status !== 204) throw new Error(`Falha ao excluir ${resource}`);
+}
+
+async function apiLogin(password) {
+  const response = await fetch(`${API_BASE}/auth`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!response.ok) return null;
+  return response.json();
 }
 
 let clientsCache = [];
@@ -114,10 +137,6 @@ const companyInfo = {
   phone: "(37) 99198-9691",
 };
 
-const ACCESS_PASSWORDS = {
-  admin: "admin0910",
-  user: "0112",
-};
 const loadingOverlay = document.querySelector("#loadingOverlay");
 const accessScreen = document.querySelector("#accessScreen");
 const accessForm = document.querySelector("#accessForm");
@@ -139,6 +158,7 @@ function lockApp(message = "") {
   inactivityTimer = null;
   sessionStorage.removeItem("yupiiAccess");
   sessionStorage.removeItem("yupiiRole");
+  sessionStorage.removeItem("yupiiToken");
   appShell.hidden = true;
   accessScreen.hidden = false;
   accessPassword.value = "";
@@ -164,14 +184,14 @@ async function unlockApp() {
 
 async function bootApp() {
   try {
-    await apiGet("clients");
+    await fetch(`${API_BASE}/auth`);
   } catch (error) {
     console.error("Falha ao acordar o servidor:", error);
   }
 
   loadingOverlay.hidden = true;
 
-  if (sessionStorage.getItem("yupiiAccess") === "granted") {
+  if (sessionStorage.getItem("yupiiAccess") === "granted" && sessionStorage.getItem("yupiiToken")) {
     await unlockApp();
   } else {
     accessScreen.hidden = false;
@@ -182,14 +202,23 @@ bootApp();
 
 accessForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const role = Object.entries(ACCESS_PASSWORDS).find(([, password]) => accessPassword.value === password)?.[0];
-  if (role) {
-    sessionStorage.setItem("yupiiRole", role);
+  accessMessage.textContent = "Validando senha...";
+  try {
+    const session = await apiLogin(accessPassword.value);
+    if (!session) {
+      accessMessage.textContent = "Senha incorreta. Tente novamente.";
+      accessPassword.select();
+      return;
+    }
+    sessionStorage.setItem("yupiiRole", session.role);
+    sessionStorage.setItem("yupiiToken", session.token);
     accessMessage.textContent = "";
     await unlockApp();
     return;
+  } catch (error) {
+    console.error(error);
+    accessMessage.textContent = "Não foi possível validar a senha agora.";
   }
-  accessMessage.textContent = "Senha incorreta. Tente novamente.";
   accessPassword.select();
 });
 
